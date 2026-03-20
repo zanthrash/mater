@@ -1,0 +1,16 @@
+{
+  "name": "mater",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "mobile",
+    "backend"
+  ],
+  "scripts": {
+    "dev:backend": "npm run dev --workspace=backend",
+    "dev:mobile": "npm run start --workspace=mobile",
+    "test:backend": "npm run test --workspace=backend",
+    "test:mobile": "npm run test --workspace=mobile",
+    "test": "npm run test:backend && npm run test:mobile"
+  }
+}
