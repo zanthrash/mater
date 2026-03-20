@@ -55,7 +55,7 @@ mater/
 
 **Key dependencies:**
 - Runtime: `fastify`, `@fastify/cors`, `@anthropic-ai/sdk`, `@supabase/supabase-js`, `pdfkit`, `axios`
-- Dev: `typescript`, `tsx`, `vitest`, `@types/node`, `@typescript-eslint/parser`, `@typescript-eslint/eslint-plugin`
+- Dev: `typescript`, `tsx`, `vitest`, `@types/node`, `eslint`, `@typescript-eslint/parser`, `@typescript-eslint/eslint-plugin`
 
 **TypeScript config:**
 - `strict: true`
@@ -82,7 +82,7 @@ No real service connections in this issue — env vars are documented but not wi
 
 **Key dependencies:**
 - Runtime: `expo`, `react-native`, `@react-navigation/native`, `@react-navigation/stack`, `expo-camera`, `expo-location`, `@react-native-async-storage/async-storage`, `axios`, `expo-image-manipulator`
-- Dev: `typescript`, `jest-expo`, `@types/react`, `eslint-config-expo`
+- Dev: `typescript`, `jest-expo`, `@types/react`, `eslint`, `eslint-config-expo`
 
 **Scripts:**
 - `start`: `expo start`
@@ -103,7 +103,7 @@ No real service connections in this issue — env vars are documented but not wi
 
 ## Supabase
 
-`supabase init` run at repo root, creating `supabase/` with a `migrations/` directory ready for issue #3. Local Supabase starts via `supabase start`.
+`supabase init` run inside `backend/`, creating `backend/supabase/` with a `migrations/` directory ready for issue #3. Local Supabase starts via `supabase start` from within `backend/`.
 
 ## Acceptance Criteria
 
