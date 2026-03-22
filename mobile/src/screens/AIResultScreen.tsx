@@ -14,7 +14,7 @@ interface EquipmentAnalysis {
 }
 
 interface Props {
-  analysis: EquipmentAnalysis
+  analysis: EquipmentAnalysis | null
   onNext: () => void
 }
 
@@ -28,6 +28,17 @@ function FieldRow({ label, value }: { label: string; value: string | number | nu
 }
 
 export function AIResultScreen({ analysis, onNext }: Props) {
+  if (!analysis) {
+    return (
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+        <Text style={styles.title}>AI Analysis Result</Text>
+        <Text style={styles.value}>No analysis available.</Text>
+        <TouchableOpacity style={styles.nextButton} onPress={onNext}>
+          <Text style={styles.nextButtonText}>Next</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    )
+  }
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.title}>AI Analysis Result</Text>
