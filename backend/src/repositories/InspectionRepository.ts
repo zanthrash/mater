@@ -36,14 +36,17 @@ export class InspectionRepository {
   async findById(id: string): Promise<Inspection> {
     const { data: record, error } = await this.supabase
       .from('inspections')
-      .select()
+      .select('*')
       .eq('id', id)
       .single()
 
-    if (error || !record) {
-      throw new Error(`Inspection not found: ${id}`)
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // PostgREST "no rows returned"
+        throw new Error(`Inspection not found: ${id}`)
+      }
+      throw new Error(`Database error: ${error.message}`)
     }
-
     return record as Inspection
   }
 }

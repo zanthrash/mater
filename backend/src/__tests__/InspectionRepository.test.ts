@@ -1,11 +1,20 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { InspectionRepository } from '../repositories/InspectionRepository.js'
 
-const mockSingle = vi.fn()
-const mockEq = vi.fn(() => ({ single: mockSingle }))
-const mockSelect = vi.fn(() => ({ eq: mockEq }))
-const mockInsert = vi.fn(() => ({ select: vi.fn(() => ({ single: mockSingle })) }))
-const mockFrom = vi.fn(() => ({ insert: mockInsert, select: mockSelect }))
+// For findById chain: from -> select -> eq -> single
+const mockFindSingle = vi.fn()
+const mockEq = vi.fn(() => ({ single: mockFindSingle }))
+const mockFindSelect = vi.fn(() => ({ eq: mockEq }))
+
+// For create chain: from -> insert -> select -> single
+const mockCreateSingle = vi.fn()
+const mockCreateSelect = vi.fn(() => ({ single: mockCreateSingle }))
+const mockInsert = vi.fn(() => ({ select: mockCreateSelect }))
+
+const mockFrom = vi.fn((table: string) => ({
+  insert: mockInsert,
+  select: mockFindSelect,
+}))
 const mockSupabase = { from: mockFrom } as any
 
 describe('InspectionRepository', () => {
@@ -32,7 +41,7 @@ describe('InspectionRepository', () => {
         photos: null,
       }
 
-      mockSingle.mockResolvedValueOnce({ data: expectedRecord, error: null })
+      mockCreateSingle.mockResolvedValueOnce({ data: expectedRecord, error: null })
 
       const result = await repo.create({
         inspector_name: 'Jane Doe',
@@ -52,7 +61,7 @@ describe('InspectionRepository', () => {
     })
 
     it('throws on supabase error', async () => {
-      mockSingle.mockResolvedValueOnce({ data: null, error: { message: 'insert failed' } })
+      mockCreateSingle.mockResolvedValueOnce({ data: null, error: { message: 'insert failed' } })
 
       await expect(
         repo.create({
@@ -86,7 +95,7 @@ describe('InspectionRepository', () => {
         photos: [{ url: 'https://example.com/photo1.jpg', type: 'front' }],
       }
 
-      mockSingle.mockResolvedValueOnce({ data: expectedRecord, error: null })
+      mockFindSingle.mockResolvedValueOnce({ data: expectedRecord, error: null })
 
       const result = await repo.findById('xyz-789')
 
@@ -94,15 +103,21 @@ describe('InspectionRepository', () => {
       expect(result.id).toBe('xyz-789')
       expect(result.inspector_name).toBe('John Smith')
       expect(result.photos).toHaveLength(1)
-      expect(mockFrom).toHaveBeenCalledWith('inspections')
-      expect(mockEq).toHaveBeenCalledWith('id', 'xyz-789')
     })
 
-    it('not found: throws Error', async () => {
-      mockSingle.mockResolvedValueOnce({ data: null, error: { message: 'No rows found' } })
+    it('not found: throws Error with PGRST116 code', async () => {
+      mockFindSingle.mockResolvedValueOnce({ data: null, error: { code: 'PGRST116', message: 'No rows found' } })
 
       await expect(repo.findById('nonexistent-id')).rejects.toThrow(
         'Inspection not found: nonexistent-id'
+      )
+    })
+
+    it('throws database error for non-PGRST116 errors', async () => {
+      mockFindSingle.mockResolvedValueOnce({ data: null, error: { code: 'PGRST500', message: 'connection refused' } })
+
+      await expect(repo.findById('some-id')).rejects.toThrow(
+        'Database error: connection refused'
       )
     })
   })

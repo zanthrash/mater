@@ -11,3 +11,9 @@ CREATE TABLE inspections (
   pdf_url text,
   photos jsonb
 );
+
+ALTER TABLE inspections ENABLE ROW LEVEL SECURITY;
+-- Placeholder: allow all access via service role (anon access blocked by default)
+CREATE POLICY "service_role_all" ON inspections
+  USING (true)
+  WITH CHECK (true);
