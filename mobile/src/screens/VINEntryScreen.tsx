@@ -7,16 +7,14 @@ import {
   ActivityIndicator,
   StyleSheet,
 } from 'react-native'
-import { APIClient } from '../services/APIClient'
-import type { VinResult } from '../services/APIClient'
+import { APIClient, VinResult, ServiceError } from '../services/APIClient'
 
 interface Props {
+  client?: APIClient
   onContinue: (vin: string, vinResult: VinResult | null) => void
 }
 
-const client = new APIClient()
-
-export function VINEntryScreen({ onContinue }: Props) {
+export function VINEntryScreen({ client = new APIClient(), onContinue }: Props) {
   const [vin, setVin] = useState('')
   const [vinResult, setVinResult] = useState<VinResult | null>(null)
   const [loading, setLoading] = useState(false)
