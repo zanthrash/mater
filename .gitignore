@@ -20,3 +20,6 @@ mobile/android/
 
 # Supabase
 backend/supabase/.temp/
+
+# Git worktrees
+.worktrees/
