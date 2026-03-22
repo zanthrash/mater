@@ -1,7 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify'
 import { createClient } from '@supabase/supabase-js'
 import { config } from '../config.js'
-import { InspectionRepository } from '../repositories/InspectionRepository.js'
+import { InspectionRepository, NotFoundError } from '../repositories/InspectionRepository.js'
 import { PhotoStorageService } from '../services/PhotoStorageService.js'
 import { PDFGeneratorService } from '../services/PDFGeneratorService.js'
 
@@ -21,12 +21,18 @@ interface GetParams {
 }
 
 export const inspectionsRoute: FastifyPluginAsync = async (fastify) => {
+  const supabase = createClient(config.supabaseUrl, config.supabaseKey)
+  const repo = new InspectionRepository(supabase)
+  const photoService = new PhotoStorageService(supabase)
+  const pdfService = new PDFGeneratorService()
+
   fastify.post<{ Body: PostBody }>(
     '/api/inspections',
     {
       schema: {
         body: {
           type: 'object',
+          additionalProperties: false,
           required: ['inspectorName', 'photos', 'equipmentData'],
           properties: {
             inspectorName: { type: 'string' },
@@ -36,6 +42,8 @@ export const inspectionsRoute: FastifyPluginAsync = async (fastify) => {
               type: 'array',
               items: {
                 type: 'object',
+                required: ['base64', 'type'],
+                additionalProperties: false,
                 properties: {
                   base64: { type: 'string' },
                   type: { type: 'string' },
@@ -53,11 +61,6 @@ export const inspectionsRoute: FastifyPluginAsync = async (fastify) => {
     async (request, reply) => {
       try {
         const body = request.body
-
-        const supabase = createClient(config.supabaseUrl, config.supabaseKey)
-        const repo = new InspectionRepository(supabase)
-        const photoService = new PhotoStorageService(supabase)
-        const pdfService = new PDFGeneratorService()
 
         // 1. Create initial inspection record
         const inspection = await repo.create({
@@ -111,16 +114,14 @@ export const inspectionsRoute: FastifyPluginAsync = async (fastify) => {
 
   fastify.get<{ Params: GetParams }>('/api/inspections/:id', async (request, reply) => {
     try {
-      const supabase = createClient(config.supabaseUrl, config.supabaseKey)
-      const repo = new InspectionRepository(supabase)
       const inspection = await repo.findById(request.params.id)
       return reply.send(inspection)
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Unknown error'
-      if (message.includes('not found')) {
-        return reply.status(404).send({ error: message })
+    } catch (error) {
+      const err = error as Error
+      if (err instanceof NotFoundError) {
+        return reply.status(404).send({ error: err.message })
       }
-      return reply.status(500).send({ error: message })
+      return reply.status(500).send({ error: err.message })
     }
   })
 }

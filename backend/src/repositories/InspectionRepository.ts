@@ -1,5 +1,12 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
+export class NotFoundError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'NotFoundError'
+  }
+}
+
 export interface Inspection {
   id: string
   created_at: string
@@ -57,7 +64,7 @@ export class InspectionRepository {
     if (error) {
       if (error.code === 'PGRST116') {
         // PostgREST "no rows returned"
-        throw new Error(`Inspection not found: ${id}`)
+        throw new NotFoundError(`Inspection not found: ${id}`)
       }
       throw new Error(`Database error: ${error.message}`)
     }

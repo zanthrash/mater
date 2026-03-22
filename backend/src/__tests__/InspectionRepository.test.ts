@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { InspectionRepository } from '../repositories/InspectionRepository.js'
+import { InspectionRepository, NotFoundError } from '../repositories/InspectionRepository.js'
 
 // For findById chain: from -> select -> eq -> single
 const mockFindSingle = vi.fn()
@@ -112,12 +112,9 @@ describe('InspectionRepository', () => {
       expect(result.photos).toHaveLength(1)
     })
 
-    it('not found: throws Error with PGRST116 code', async () => {
-      mockFindSingle.mockResolvedValueOnce({ data: null, error: { code: 'PGRST116', message: 'No rows found' } })
-
-      await expect(repo.findById('nonexistent-id')).rejects.toThrow(
-        'Inspection not found: nonexistent-id'
-      )
+    it('throws NotFoundError when inspection not found', async () => {
+      mockFindSingle.mockResolvedValueOnce({ data: null, error: { code: 'PGRST116', message: 'no rows' } })
+      await expect(repo.findById('missing-id')).rejects.toThrow(NotFoundError)
     })
 
     it('throws database error for non-PGRST116 errors', async () => {
