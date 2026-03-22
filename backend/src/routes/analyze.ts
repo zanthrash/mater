@@ -3,7 +3,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import { createClient } from '@supabase/supabase-js'
 import { config } from '../config.js'
 import { PhotoStorageService } from '../services/PhotoStorageService.js'
-import { ImageAnalysisService } from '../services/ImageAnalysisService.js'
+import { ImageAnalysisService, VinExtractionError } from '../services/ImageAnalysisService.js'
 import type { ImageInput } from '../services/ImageAnalysisService.js'
 import { VINLookupService } from '../services/VINLookupService.js'
 
@@ -83,6 +83,32 @@ export const analyzeRoute: FastifyPluginAsync = async (fastify) => {
       const result = await vinService.lookupVin(vin)
       return reply.send(result)
     } catch (error) {
+      const err = error as Error
+      return reply.status(500).send({ error: err.message })
+    }
+  })
+
+  fastify.post('/api/analyze/vin-ocr', {
+    schema: {
+      body: {
+        type: 'object',
+        required: ['image'],
+        properties: {
+          image: { type: 'string' },
+        },
+      },
+    },
+  }, async (request, reply) => {
+    try {
+      const { image } = request.body as { image: string }
+      const anthropic = new Anthropic({ apiKey: config.anthropicApiKey })
+      const analysisService = new ImageAnalysisService(anthropic)
+      const vin = await analysisService.extractVinFromImage(image)
+      return reply.send({ vin })
+    } catch (error) {
+      if (error instanceof VinExtractionError) {
+        return reply.status(422).send({ error: error.message })
+      }
       const err = error as Error
       return reply.status(500).send({ error: err.message })
     }

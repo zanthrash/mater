@@ -86,4 +86,50 @@ export class ImageAnalysisService {
       return { ...NULL_ANALYSIS }
     }
   }
+
+  async extractVinFromImage(base64Image: string): Promise<string> {
+    const response = await this.anthropic.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 256,
+      system: 'You are an expert at reading VIN (Vehicle Identification Number) and serial number plates from photos of vehicles and heavy equipment.',
+      messages: [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'image',
+              source: {
+                type: 'base64',
+                media_type: 'image/jpeg',
+                data: base64Image,
+              },
+            },
+            {
+              type: 'text',
+              text: 'Extract the VIN (Vehicle Identification Number) or serial number visible in this image. Return ONLY the VIN/serial number string with no additional text. If no VIN or serial number is visible, return exactly "NO_VIN_FOUND".',
+            },
+          ],
+        },
+      ],
+    })
+
+    const textContent = response.content.find((block) => block.type === 'text')
+    if (!textContent || textContent.type !== 'text') {
+      throw new VinExtractionError('No text response from API')
+    }
+
+    const vin = textContent.text.trim()
+    if (vin === 'NO_VIN_FOUND' || vin.length === 0) {
+      throw new VinExtractionError('No VIN found in image')
+    }
+
+    return vin
+  }
+}
+
+export class VinExtractionError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'VinExtractionError'
+  }
 }
