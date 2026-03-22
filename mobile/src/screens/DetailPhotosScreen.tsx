@@ -1,6 +1,18 @@
 import React, { useState } from 'react'
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native'
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  Image,
+} from 'react-native'
 import { APIClient, AnalyzeImagesResponse, ServiceError } from '../services/APIClient'
+import { CameraViewfinder } from '../components/CameraViewfinder'
+
+const MIN_PHOTOS = 3
 
 interface Props {
   client?: APIClient
@@ -9,24 +21,50 @@ interface Props {
 
 export function DetailPhotosScreen({ client = new APIClient(), onAnalysisComplete }: Props) {
   const [analyzing, setAnalyzing] = useState(false)
-  const [photoCount, setPhotoCount] = useState(0)
+  const [photos, setPhotos] = useState<string[]>([])
+  const [cameraOpen, setCameraOpen] = useState(false)
+  const [retakeIndex, setRetakeIndex] = useState<number | null>(null)
 
-  const handleTakePhoto = () => {
-    // Placeholder: in the real implementation this would open the camera
-    setPhotoCount((count) => count + 1)
+  const handleAddPhoto = () => {
+    setRetakeIndex(null)
+    setCameraOpen(true)
+  }
+
+  const handleThumbnailPress = (index: number) => {
+    setRetakeIndex(index)
+    setCameraOpen(true)
+  }
+
+  const handleCapture = (base64: string) => {
+    if (retakeIndex !== null) {
+      setPhotos((prev) => {
+        const updated = [...prev]
+        updated[retakeIndex] = base64
+        return updated
+      })
+    } else {
+      setPhotos((prev) => [...prev, base64])
+    }
+    setCameraOpen(false)
+    setRetakeIndex(null)
+  }
+
+  const handleCancelCamera = () => {
+    setCameraOpen(false)
+    setRetakeIndex(null)
   }
 
   const handleAnalyze = async () => {
     setAnalyzing(true)
     try {
-      const photos = Array.from({ length: photoCount }, () => ({
-        base64: '',
+      const photoPayload = photos.map((base64) => ({
+        base64,
         type: 'detail',
         mediaType: 'image/jpeg',
       }))
       const result = await client.analyzeImages({
         inspectionId: 'draft-inspection',
-        photos,
+        photos: photoPayload,
       })
       onAnalysisComplete(result)
     } catch (error) {
@@ -37,23 +75,58 @@ export function DetailPhotosScreen({ client = new APIClient(), onAnalysisComplet
     }
   }
 
+  if (cameraOpen) {
+    return <CameraViewfinder onCapture={handleCapture} onCancel={handleCancelCamera} />
+  }
+
+  const photosNeeded = MIN_PHOTOS - photos.length
+  const canContinue = photos.length >= MIN_PHOTOS
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Detail Photos</Text>
       <Text style={styles.instruction}>Take photos of key equipment areas</Text>
-      <TouchableOpacity style={styles.button} onPress={handleTakePhoto}>
-        <Text style={styles.buttonText}>Take Photo</Text>
+
+      {photos.length > 0 && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.thumbnailRow}
+          contentContainerStyle={styles.thumbnailRowContent}
+        >
+          {photos.map((base64, index) => (
+            <TouchableOpacity
+              key={index}
+              onPress={() => handleThumbnailPress(index)}
+              testID={`thumbnail-${index}`}
+            >
+              <Image
+                source={{ uri: `data:image/jpeg;base64,${base64}` }}
+                style={styles.thumbnail}
+              />
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      )}
+
+      <TouchableOpacity style={styles.button} onPress={handleAddPhoto} testID="add-photo-button">
+        <Text style={styles.buttonText}>Add Photo</Text>
       </TouchableOpacity>
-      <Text style={styles.photoCount}>{photoCount} photos taken</Text>
+
+      <Text style={styles.photoCount}>{photos.length} photos taken</Text>
+
       {analyzing ? (
         <ActivityIndicator size="large" />
       ) : (
         <TouchableOpacity
-          style={[styles.button, styles.analyzeButton]}
+          style={[styles.button, styles.analyzeButton, !canContinue && styles.disabledButton]}
           onPress={handleAnalyze}
-          disabled={photoCount === 0}
+          disabled={!canContinue}
+          testID="analyze-button"
         >
-          <Text style={styles.buttonText}>Analyze Photos</Text>
+          <Text style={styles.buttonText}>
+            {canContinue ? 'Analyze Photos' : `Need ${photosNeeded} more photo${photosNeeded === 1 ? '' : 's'}`}
+          </Text>
         </TouchableOpacity>
       )}
     </View>
@@ -78,6 +151,20 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     textAlign: 'center',
   },
+  thumbnailRow: {
+    maxHeight: 100,
+    marginBottom: 16,
+  },
+  thumbnailRowContent: {
+    paddingHorizontal: 4,
+    gap: 8,
+  },
+  thumbnail: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    backgroundColor: '#e0e0e0',
+  },
   button: {
     backgroundColor: '#007AFF',
     paddingVertical: 12,
@@ -87,6 +174,9 @@ const styles = StyleSheet.create({
   },
   analyzeButton: {
     backgroundColor: '#34C759',
+  },
+  disabledButton: {
+    backgroundColor: '#999',
   },
   buttonText: {
     color: '#fff',
