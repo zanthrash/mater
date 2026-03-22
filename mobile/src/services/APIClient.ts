@@ -95,6 +95,17 @@ export class APIClient {
     }
   }
 
+  async analyzeVinOcr(image: string): Promise<{ vin: string }> {
+    try {
+      const response = await this.http.post<{ vin: string }>('/api/analyze/vin-ocr', { image })
+      return response.data
+    } catch (error) {
+      const err = error as import('axios').AxiosError
+      const message = (err.response?.data as { error?: string })?.error ?? err.message
+      throw { message, source: 'backend' as const } as ServiceError
+    }
+  }
+
   async submitInspection(request: SubmitInspectionRequest): Promise<SubmitInspectionResponse> {
     try {
       const response = await this.http.post<SubmitInspectionResponse>('/api/inspections', request)

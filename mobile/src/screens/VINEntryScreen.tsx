@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useCallback } from 'react'
 import {
   View,
   Text,
@@ -7,7 +7,8 @@ import {
   ActivityIndicator,
   StyleSheet,
 } from 'react-native'
-import { APIClient, VinResult, ServiceError } from '../services/APIClient'
+import { APIClient, VinResult } from '../services/APIClient'
+import { VINScannerScreen } from './VINScannerScreen'
 
 interface Props {
   client?: APIClient
@@ -19,6 +20,7 @@ export function VINEntryScreen({ client = new APIClient(), onContinue }: Props) 
   const [vinResult, setVinResult] = useState<VinResult | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [scannerOpen, setScannerOpen] = useState(false)
 
   const handleLookup = async () => {
     setLoading(true)
@@ -33,6 +35,28 @@ export function VINEntryScreen({ client = new APIClient(), onContinue }: Props) 
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleVinScanned = useCallback((scannedVin: string) => {
+    setVin(scannedVin)
+    setScannerOpen(false)
+    setError(null)
+    setVinResult(null)
+  }, [])
+
+  const handleScannerCancel = useCallback(() => {
+    setScannerOpen(false)
+    setError("Couldn't read VIN \u2014 please enter manually")
+  }, [])
+
+  if (scannerOpen) {
+    return (
+      <VINScannerScreen
+        onVinScanned={handleVinScanned}
+        onCancel={handleScannerCancel}
+        client={client}
+      />
+    )
   }
 
   return (
@@ -58,10 +82,10 @@ export function VINEntryScreen({ client = new APIClient(), onContinue }: Props) 
 
       {vinResult !== null && (
         <View style={styles.resultContainer}>
-          <Text style={styles.resultRow}>Make: {vinResult.make ?? '—'}</Text>
-          <Text style={styles.resultRow}>Model: {vinResult.model ?? '—'}</Text>
+          <Text style={styles.resultRow}>Make: {vinResult.make ?? '\u2014'}</Text>
+          <Text style={styles.resultRow}>Model: {vinResult.model ?? '\u2014'}</Text>
           <Text style={styles.resultRow}>
-            Year: {vinResult.year !== null ? String(vinResult.year) : '—'}
+            Year: {vinResult.year !== null ? String(vinResult.year) : '\u2014'}
           </Text>
           <Text style={styles.resultRow}>
             Source: {vinResult.source === 'nhtsa' ? 'NHTSA' : 'AI'}
@@ -69,8 +93,13 @@ export function VINEntryScreen({ client = new APIClient(), onContinue }: Props) 
         </View>
       )}
 
-      <View style={styles.button}>
-        <Button title="Look Up VIN" onPress={handleLookup} disabled={loading || vin.length === 0} />
+      <View style={styles.buttonRow}>
+        <View style={styles.buttonHalf}>
+          <Button title="Look Up VIN" onPress={handleLookup} disabled={loading || vin.length === 0} />
+        </View>
+        <View style={styles.buttonHalf}>
+          <Button title="Scan VIN" onPress={() => setScannerOpen(true)} disabled={loading} />
+        </View>
       </View>
 
       <View style={styles.button}>
@@ -124,6 +153,14 @@ const styles = StyleSheet.create({
   resultRow: {
     fontSize: 15,
     marginBottom: 4,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    marginBottom: 12,
+    gap: 12,
+  },
+  buttonHalf: {
+    flex: 1,
   },
   button: {
     marginBottom: 12,
