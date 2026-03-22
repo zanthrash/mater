@@ -10,6 +10,8 @@ import type { AnalyzeImagesResponse, VinResult } from './services/APIClient'
 
 type Screen = 'overview' | 'vin' | 'photos' | 'result' | 'conflict'
 
+const validScreens: Screen[] = ['overview', 'vin', 'photos', 'result', 'conflict']
+
 const stateManager = new WizardStateManager()
 
 export default function App() {
@@ -17,6 +19,7 @@ export default function App() {
   const [analysisResult, setAnalysisResult] = useState<AnalyzeImagesResponse | null>(null)
   const [overviewUri, setOverviewUri] = useState<string | null>(null)
   const [vinData, setVinData] = useState<{ vin: string; result: VinResult | null } | null>(null)
+  const [resolvedData, setResolvedData] = useState<Record<string, string | number | null> | null>(null)
   const draftChecked = useRef(false)
 
   useEffect(() => {
@@ -31,8 +34,28 @@ export default function App() {
         [
           {
             text: 'Resume',
-            onPress: () => {
-              setScreen(draft.step as Screen)
+            onPress: async () => {
+              const latestDraft = await stateManager.loadDraft()
+              if (latestDraft) {
+                const targetScreen = validScreens.includes(latestDraft.step as Screen)
+                  ? (latestDraft.step as Screen)
+                  : 'overview'
+                setScreen(targetScreen)
+                if (latestDraft.overviewUri) setOverviewUri(latestDraft.overviewUri)
+                if (latestDraft.vinResult !== undefined)
+                  setVinData(
+                    latestDraft.vin
+                      ? { vin: latestDraft.vin, result: latestDraft.vinResult ?? null }
+                      : null,
+                  )
+                if (latestDraft.aiResult !== undefined)
+                  setAnalysisResult(
+                    latestDraft.aiResult
+                      ? { storedPhotos: [], analysis: latestDraft.aiResult }
+                      : null,
+                  )
+                if (latestDraft.resolvedData) setResolvedData(latestDraft.resolvedData)
+              }
             },
           },
           {
@@ -71,13 +94,13 @@ export default function App() {
     )
   }
 
-  if (screen === 'result' && analysisResult) {
+  if (screen === 'result') {
     return (
       <AIResultScreen
-        analysis={analysisResult.analysis}
+        analysis={analysisResult?.analysis ?? null}
         onNext={() => {
           stateManager.saveStep('conflict', {
-            aiResult: analysisResult.analysis,
+            aiResult: analysisResult?.analysis ?? null,
           })
           setScreen('conflict')
         }}
@@ -92,13 +115,13 @@ export default function App() {
       <ConflictResolutionView
         aiResult={aiResult}
         vinResult={vinResult}
-        onResolved={(resolvedData) => {
-          stateManager.saveStep('overview', { resolvedData })
+        onResolved={(resolved) => {
+          setResolvedData(resolved)
+          stateManager.clearDraft()
           Alert.alert('Draft saved', 'Resolved data saved.')
           setOverviewUri(null)
           setVinData(null)
           setAnalysisResult(null)
-          stateManager.clearDraft()
           setScreen('overview')
         }}
       />
