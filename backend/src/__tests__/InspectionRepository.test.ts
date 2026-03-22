@@ -11,9 +11,16 @@ const mockCreateSingle = vi.fn()
 const mockCreateSelect = vi.fn(() => ({ single: mockCreateSingle }))
 const mockInsert = vi.fn(() => ({ select: mockCreateSelect }))
 
+// For update chain: from -> update -> eq -> select -> single
+const mockUpdateSingle = vi.fn()
+const mockUpdateSelect = vi.fn(() => ({ single: mockUpdateSingle }))
+const mockUpdateEq = vi.fn(() => ({ select: mockUpdateSelect }))
+const mockUpdate = vi.fn(() => ({ eq: mockUpdateEq }))
+
 const mockFrom = vi.fn((table: string) => ({
   insert: mockInsert,
   select: mockFindSelect,
+  update: mockUpdate,
 }))
 const mockSupabase = { from: mockFrom } as any
 
@@ -119,6 +126,48 @@ describe('InspectionRepository', () => {
       await expect(repo.findById('some-id')).rejects.toThrow(
         'Database error: connection refused'
       )
+    })
+  })
+
+  describe('update', () => {
+    it('happy path: returns updated record', async () => {
+      const updatedRecord = {
+        id: 'abc-123',
+        created_at: '2026-03-22T00:00:00.000Z',
+        inspector_name: 'Jane Doe',
+        gps_lat: 37.7749,
+        gps_lon: -122.4194,
+        equipment_data: { make: 'Caterpillar', model: '320' },
+        condition_data: null,
+        ai_image_result: null,
+        vin_lookup_result: null,
+        pdf_url: 'https://example.com/report.pdf',
+        photos: [{ url: 'https://example.com/photo.jpg', type: 'overview' }],
+      }
+
+      mockUpdateSingle.mockResolvedValueOnce({ data: updatedRecord, error: null })
+
+      const result = await repo.update('abc-123', {
+        pdf_url: 'https://example.com/report.pdf',
+        photos: [{ url: 'https://example.com/photo.jpg', type: 'overview' }],
+      })
+
+      expect(result).toEqual(updatedRecord)
+      expect(result.pdf_url).toBe('https://example.com/report.pdf')
+      expect(result.photos).toHaveLength(1)
+      expect(mockUpdate).toHaveBeenCalledWith({
+        pdf_url: 'https://example.com/report.pdf',
+        photos: [{ url: 'https://example.com/photo.jpg', type: 'overview' }],
+      })
+      expect(mockUpdateEq).toHaveBeenCalledWith('id', 'abc-123')
+    })
+
+    it('throws on supabase error', async () => {
+      mockUpdateSingle.mockResolvedValueOnce({ data: null, error: { message: 'update failed' } })
+
+      await expect(
+        repo.update('abc-123', { pdf_url: 'https://example.com/report.pdf' })
+      ).rejects.toThrow('Database error: update failed')
     })
   })
 })

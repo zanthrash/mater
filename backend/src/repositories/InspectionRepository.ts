@@ -33,6 +33,20 @@ export class InspectionRepository {
     return record as Inspection
   }
 
+  async update(id: string, data: Partial<CreateInspectionData>): Promise<Inspection> {
+    const { data: record, error } = await this.supabase
+      .from('inspections')
+      .update(data)
+      .eq('id', id)
+      .select('*')
+      .single()
+
+    if (error) {
+      throw new Error(`Database error: ${error.message}`)
+    }
+    return record as Inspection
+  }
+
   async findById(id: string): Promise<Inspection> {
     const { data: record, error } = await this.supabase
       .from('inspections')
