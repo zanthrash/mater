@@ -1,5 +1,12 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
+export class NotFoundError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'NotFoundError'
+  }
+}
+
 export interface Inspection {
   id: string
   created_at: string
@@ -33,6 +40,20 @@ export class InspectionRepository {
     return record as Inspection
   }
 
+  async update(id: string, data: Partial<CreateInspectionData>): Promise<Inspection> {
+    const { data: record, error } = await this.supabase
+      .from('inspections')
+      .update(data)
+      .eq('id', id)
+      .select('*')
+      .single()
+
+    if (error) {
+      throw new Error(`Database error: ${error.message}`)
+    }
+    return record as Inspection
+  }
+
   async findById(id: string): Promise<Inspection> {
     const { data: record, error } = await this.supabase
       .from('inspections')
@@ -43,7 +64,7 @@ export class InspectionRepository {
     if (error) {
       if (error.code === 'PGRST116') {
         // PostgREST "no rows returned"
-        throw new Error(`Inspection not found: ${id}`)
+        throw new NotFoundError(`Inspection not found: ${id}`)
       }
       throw new Error(`Database error: ${error.message}`)
     }
