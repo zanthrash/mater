@@ -16,13 +16,35 @@ interface AnalyzeBody {
 }
 
 export const analyzeRoute: FastifyPluginAsync = async (fastify) => {
-  fastify.post('/api/analyze/images', async (request, reply) => {
+  fastify.post('/api/analyze/images', {
+    schema: {
+      body: {
+        type: 'object',
+        required: ['inspectionId', 'photos'],
+        properties: {
+          inspectionId: { type: 'string' },
+          photos: {
+            type: 'array',
+            items: {
+              type: 'object',
+              required: ['base64', 'type'],
+              properties: {
+                base64: { type: 'string' },
+                type: { type: 'string' },
+                mediaType: { type: 'string' },
+              },
+            },
+          },
+        },
+      },
+    },
+  }, async (request, reply) => {
     try {
       const body = request.body as AnalyzeBody
       const { inspectionId, photos } = body
 
       const supabase = createClient(config.supabaseUrl, config.supabaseKey)
-      const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+      const anthropic = new Anthropic({ apiKey: config.anthropicApiKey })
       const photoService = new PhotoStorageService(supabase)
       const analysisService = new ImageAnalysisService(anthropic)
 
