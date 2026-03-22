@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 
 const DRAFT_KEY = 'inspection_draft'
 
-export type WizardStep = 'overview' | 'vin' | 'photos' | 'conflict' | 'condition' | 'review' | 'confirm'
+export type WizardStep = 'overview' | 'vin' | 'photos' | 'result' | 'conflict' | 'condition' | 'review' | 'submit-success'
 
 export interface WizardDraft {
   step: WizardStep
