@@ -54,6 +54,56 @@ describe('APIClient', () => {
     })
   })
 
+  describe('submitInspection', () => {
+    it('posts to /api/inspections and returns response', async () => {
+      const mockPost = jest.fn().mockResolvedValue({
+        data: { inspectionId: 'abc-123', pdfUrl: 'http://example.com/report.pdf' }
+      })
+      ;(axios.create as jest.Mock).mockReturnValue({ post: mockPost })
+
+      const client = new APIClient()
+      const result = await client.submitInspection({
+        inspectorName: 'Jane',
+        photos: [],
+        equipmentData: { make: 'CAT' },
+        conditionData: {
+          overall: 'Good',
+          engine: { rating: 'Good', notes: '' },
+          hydraulics: { rating: 'Fair', notes: '' },
+          undercarriage: { rating: 'Good', notes: '' },
+          cab: { rating: 'Good', notes: '' },
+        },
+      })
+
+      expect(result.inspectionId).toBe('abc-123')
+      expect(result.pdfUrl).toBe('http://example.com/report.pdf')
+    })
+
+    it('throws ServiceError on failure', async () => {
+      const mockPost = jest.fn().mockRejectedValue({
+        response: { data: { error: 'Server error' } },
+        message: 'Request failed',
+      })
+      ;(axios.create as jest.Mock).mockReturnValue({ post: mockPost })
+
+      const client = new APIClient()
+      await expect(
+        client.submitInspection({
+          inspectorName: 'Jane',
+          photos: [],
+          equipmentData: {},
+          conditionData: {
+            overall: 'Good',
+            engine: { rating: 'Good', notes: '' },
+            hydraulics: { rating: 'Good', notes: '' },
+            undercarriage: { rating: 'Good', notes: '' },
+            cab: { rating: 'Good', notes: '' },
+          },
+        })
+      ).rejects.toMatchObject({ source: 'backend', message: 'Server error' })
+    })
+  })
+
   describe('analyzeVin', () => {
     it('posts to /api/analyze/vin and returns VinResult', async () => {
       const mockPost = jest.fn().mockResolvedValue({

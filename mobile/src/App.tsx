@@ -5,14 +5,20 @@ import { VINEntryScreen } from './screens/VINEntryScreen'
 import { DetailPhotosScreen } from './screens/DetailPhotosScreen'
 import { AIResultScreen } from './screens/AIResultScreen'
 import { ConflictResolutionView } from './screens/ConflictResolutionView'
+import { ConditionAssessmentScreen } from './screens/ConditionAssessmentScreen'
+import { ReviewScreen } from './screens/ReviewScreen'
+import { SubmitScreen } from './screens/SubmitScreen'
 import { WizardStateManager } from './state/WizardStateManager'
+import { APIClient } from './services/APIClient'
 import type { AnalyzeImagesResponse, VinResult } from './services/APIClient'
+import * as Location from 'expo-location'
 
-type Screen = 'overview' | 'vin' | 'photos' | 'result' | 'conflict'
+type Screen = 'overview' | 'vin' | 'photos' | 'result' | 'conflict' | 'condition' | 'review' | 'submit-success'
 
-const validScreens: Screen[] = ['overview', 'vin', 'photos', 'result', 'conflict']
+const validScreens: Screen[] = ['overview', 'vin', 'photos', 'result', 'conflict', 'condition', 'review', 'submit-success']
 
 const stateManager = new WizardStateManager()
+const client = new APIClient()
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>('overview')
@@ -20,6 +26,8 @@ export default function App() {
   const [overviewUri, setOverviewUri] = useState<string | null>(null)
   const [vinData, setVinData] = useState<{ vin: string; result: VinResult | null } | null>(null)
   const [resolvedData, setResolvedData] = useState<Record<string, string | number | null> | null>(null)
+  const [conditionData, setConditionData] = useState<any>(null)
+  const [submitResult, setSubmitResult] = useState<{ inspectionId: string; pdfUrl: string } | null>(null)
   const draftChecked = useRef(false)
 
   useEffect(() => {
@@ -66,6 +74,16 @@ export default function App() {
       )
     })
   }, [])
+
+  function resetAll() {
+    setOverviewUri(null)
+    setVinData(null)
+    setAnalysisResult(null)
+    setResolvedData(null)
+    setConditionData(null)
+    setSubmitResult(null)
+    setScreen('overview')
+  }
 
   if (screen === 'overview') {
     return (
@@ -117,13 +135,75 @@ export default function App() {
         vinResult={vinResult}
         onResolved={(resolved) => {
           setResolvedData(resolved)
-          stateManager.clearDraft()
-          Alert.alert('Draft saved', 'Resolved data saved.')
-          setOverviewUri(null)
-          setVinData(null)
-          setAnalysisResult(null)
-          setScreen('overview')
+          setScreen('condition')
         }}
+      />
+    )
+  }
+
+  if (screen === 'condition') {
+    const conditionSummary = analysisResult?.analysis?.conditionSummary ?? null
+    return (
+      <ConditionAssessmentScreen
+        conditionSummary={conditionSummary}
+        onContinue={(data) => {
+          setConditionData(data)
+          setScreen('review')
+        }}
+      />
+    )
+  }
+
+  if (screen === 'review') {
+    const photoCount = analysisResult?.storedPhotos?.length ?? 0
+    return (
+      <ReviewScreen
+        equipmentData={resolvedData as Record<string, unknown> | null}
+        conditionData={conditionData}
+        photoCount={photoCount}
+        client={client}
+        onSubmit={async (inspectorName) => {
+          let gpsLat: number | undefined
+          let gpsLon: number | undefined
+          try {
+            const { status } = await Location.requestForegroundPermissionsAsync()
+            if (status === 'granted') {
+              const location = await Location.getCurrentPositionAsync({})
+              gpsLat = location.coords.latitude
+              gpsLon = location.coords.longitude
+            }
+          } catch {
+            // GPS optional — continue without it
+          }
+
+          try {
+            const result = await client.submitInspection({
+              inspectorName,
+              gpsLat,
+              gpsLon,
+              photos: [],
+              equipmentData: (resolvedData as Record<string, unknown>) ?? {},
+              conditionData: conditionData,
+              aiImageResult: (analysisResult?.analysis as Record<string, unknown> | null) ?? null,
+              vinLookupResult: (vinData?.result as Record<string, unknown> | null) ?? null,
+            })
+            await stateManager.clearDraft()
+            setSubmitResult(result)
+            setScreen('submit-success')
+          } catch (error: any) {
+            Alert.alert('Submit failed', error?.message ?? 'Unknown error')
+          }
+        }}
+      />
+    )
+  }
+
+  if (screen === 'submit-success' && submitResult) {
+    return (
+      <SubmitScreen
+        inspectionId={submitResult.inspectionId}
+        pdfUrl={submitResult.pdfUrl}
+        onStartNew={resetAll}
       />
     )
   }
