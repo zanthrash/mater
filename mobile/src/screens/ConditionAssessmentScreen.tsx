@@ -12,6 +12,19 @@ type Rating = 'Excellent' | 'Good' | 'Fair' | 'Poor' | 'Salvage'
 
 const RATINGS: Rating[] = ['Excellent', 'Good', 'Fair', 'Poor', 'Salvage']
 
+export interface SectionCondition {
+  rating: string
+  notes: string
+}
+
+export interface ConditionFormData {
+  overall: 'Excellent' | 'Good' | 'Fair' | 'Poor' | 'Salvage'
+  engine: SectionCondition
+  hydraulics: SectionCondition
+  undercarriage: SectionCondition
+  cab: SectionCondition
+}
+
 interface SectionData {
   rating: Rating
   notes: string
@@ -19,13 +32,7 @@ interface SectionData {
 
 interface Props {
   conditionSummary?: string | null
-  onContinue: (conditionData: {
-    overall: Rating
-    engine: { rating: string; notes: string }
-    hydraulics: { rating: string; notes: string }
-    undercarriage: { rating: string; notes: string }
-    cab: { rating: string; notes: string }
-  }) => void
+  onContinue: (conditionData: ConditionFormData) => void
 }
 
 function RatingPicker({

@@ -7,13 +7,12 @@ import {
   TouchableOpacity,
   TextInput,
 } from 'react-native'
-import type { APIClient } from '../services/APIClient'
+import type { ConditionFormData } from './ConditionAssessmentScreen'
 
 interface Props {
   equipmentData: Record<string, unknown> | null
-  conditionData: any
+  conditionData: ConditionFormData | null
   photoCount: number
-  client?: APIClient
   onSubmit: (inspectorName: string) => void
 }
 

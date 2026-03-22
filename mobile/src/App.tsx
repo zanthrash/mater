@@ -6,6 +6,7 @@ import { DetailPhotosScreen } from './screens/DetailPhotosScreen'
 import { AIResultScreen } from './screens/AIResultScreen'
 import { ConflictResolutionView } from './screens/ConflictResolutionView'
 import { ConditionAssessmentScreen } from './screens/ConditionAssessmentScreen'
+import type { ConditionFormData } from './screens/ConditionAssessmentScreen'
 import { ReviewScreen } from './screens/ReviewScreen'
 import { SubmitScreen } from './screens/SubmitScreen'
 import { WizardStateManager } from './state/WizardStateManager'
@@ -26,7 +27,7 @@ export default function App() {
   const [overviewUri, setOverviewUri] = useState<string | null>(null)
   const [vinData, setVinData] = useState<{ vin: string; result: VinResult | null } | null>(null)
   const [resolvedData, setResolvedData] = useState<Record<string, string | number | null> | null>(null)
-  const [conditionData, setConditionData] = useState<any>(null)
+  const [conditionData, setConditionData] = useState<ConditionFormData | null>(null)
   const [submitResult, setSubmitResult] = useState<{ inspectionId: string; pdfUrl: string } | null>(null)
   const draftChecked = useRef(false)
 
@@ -161,7 +162,6 @@ export default function App() {
         equipmentData={resolvedData as Record<string, unknown> | null}
         conditionData={conditionData}
         photoCount={photoCount}
-        client={client}
         onSubmit={async (inspectorName) => {
           let gpsLat: number | undefined
           let gpsLon: number | undefined
@@ -190,8 +190,9 @@ export default function App() {
             await stateManager.clearDraft()
             setSubmitResult(result)
             setScreen('submit-success')
-          } catch (error: any) {
-            Alert.alert('Submit failed', error?.message ?? 'Unknown error')
+          } catch (error) {
+            const err = error as { message?: string }
+            Alert.alert('Submit failed', err.message ?? 'Unknown error')
           }
         }}
       />

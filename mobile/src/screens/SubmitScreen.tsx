@@ -1,5 +1,5 @@
 import React from 'react'
-import { View, Text, StyleSheet, TouchableOpacity, Linking } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity, Linking, Alert } from 'react-native'
 
 interface Props {
   inspectionId: string
@@ -9,7 +9,9 @@ interface Props {
 
 export function SubmitScreen({ inspectionId, pdfUrl, onStartNew }: Props) {
   function handleOpenPdf() {
-    Linking.openURL(pdfUrl)
+    Linking.openURL(pdfUrl).catch((err: Error) => {
+      Alert.alert('Could not open PDF', err.message)
+    })
   }
 
   return (
