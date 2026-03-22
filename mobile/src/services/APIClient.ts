@@ -25,11 +25,36 @@ export interface AnalyzeImagesResponse {
   }
 }
 
+export interface AnalyzeVinRequest {
+  vin: string
+}
+
+export interface VinResult {
+  make: string | null
+  model: string | null
+  year: number | null
+  engineType: string | null
+  transmission: string | null
+  gvwLbs: number | null
+  source: 'nhtsa' | 'claude'
+}
+
 export class APIClient {
   private readonly http: AxiosInstance
 
   constructor(baseURL: string = 'http://localhost:3000') {
     this.http = axios.create({ baseURL })
+  }
+
+  async analyzeVin(request: AnalyzeVinRequest): Promise<VinResult> {
+    try {
+      const response = await this.http.post<VinResult>('/api/analyze/vin', request)
+      return response.data
+    } catch (error) {
+      const err = error as import('axios').AxiosError
+      const message = (err.response?.data as { error?: string })?.error ?? err.message
+      throw { message, source: 'backend' as const } as ServiceError
+    }
   }
 
   async analyzeImages(request: AnalyzeImagesRequest): Promise<AnalyzeImagesResponse> {

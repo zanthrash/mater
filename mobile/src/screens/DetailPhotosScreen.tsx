@@ -3,10 +3,11 @@ import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } fr
 import { APIClient, AnalyzeImagesResponse, ServiceError } from '../services/APIClient'
 
 interface Props {
+  client?: APIClient
   onAnalysisComplete: (result: AnalyzeImagesResponse) => void
 }
 
-export function DetailPhotosScreen({ onAnalysisComplete }: Props) {
+export function DetailPhotosScreen({ client = new APIClient(), onAnalysisComplete }: Props) {
   const [analyzing, setAnalyzing] = useState(false)
   const [photoCount, setPhotoCount] = useState(0)
 
@@ -18,7 +19,6 @@ export function DetailPhotosScreen({ onAnalysisComplete }: Props) {
   const handleAnalyze = async () => {
     setAnalyzing(true)
     try {
-      const client = new APIClient()
       const photos = Array.from({ length: photoCount }, () => ({
         base64: '',
         type: 'detail',

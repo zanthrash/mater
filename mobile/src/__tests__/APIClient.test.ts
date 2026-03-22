@@ -53,4 +53,41 @@ describe('APIClient', () => {
       })
     })
   })
+
+  describe('analyzeVin', () => {
+    it('posts to /api/analyze/vin and returns VinResult', async () => {
+      const mockPost = jest.fn().mockResolvedValue({
+        data: {
+          make: 'John Deere',
+          model: '310L',
+          year: 2020,
+          engineType: null,
+          transmission: null,
+          gvwLbs: null,
+          source: 'nhtsa',
+        }
+      })
+      ;(axios.create as jest.Mock).mockReturnValue({ post: mockPost })
+
+      const client = new APIClient()
+      const result = await client.analyzeVin({ vin: '1FT8W3DT5KEE12345' })
+
+      expect(result.make).toBe('John Deere')
+      expect(result.source).toBe('nhtsa')
+    })
+
+    it('throws ServiceError on failure', async () => {
+      const mockPost = jest.fn().mockRejectedValue({
+        response: { data: { error: 'NHTSA unavailable' } },
+        message: 'Request failed',
+      })
+      ;(axios.create as jest.Mock).mockReturnValue({ post: mockPost })
+
+      const client = new APIClient()
+      await expect(client.analyzeVin({ vin: 'INVALID' })).rejects.toMatchObject({
+        source: 'backend',
+        message: 'NHTSA unavailable',
+      })
+    })
+  })
 })
