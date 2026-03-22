@@ -35,7 +35,7 @@ describe('PhotoCaptureModule', () => {
     expect(ImageManipulator.manipulateAsync).toHaveBeenCalledWith(
       'file://photo.jpg',
       [{ resize: { width: 1024 } }],
-      expect.objectContaining({ compress: 0.8 })
+      expect.objectContaining({ compress: 0.8, format: 'jpeg' })
     )
   })
 })

@@ -38,7 +38,8 @@ export class APIClient {
       return response.data
     } catch (error) {
       const err = error as import('axios').AxiosError
-      throw { message: err.response?.data?.error ?? err.message, source: 'backend' as const }
+      const message = (err.response?.data as { error?: string })?.error ?? err.message
+      throw { message, source: 'backend' as const } as ServiceError
     }
   }
 }

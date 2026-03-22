@@ -1,9 +1,9 @@
 import React, { useState } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native'
-import { APIClient } from '../services/APIClient'
+import { APIClient, AnalyzeImagesResponse, ServiceError } from '../services/APIClient'
 
 interface Props {
-  onAnalysisComplete: (result: any) => void
+  onAnalysisComplete: (result: AnalyzeImagesResponse) => void
 }
 
 export function DetailPhotosScreen({ onAnalysisComplete }: Props) {
@@ -29,8 +29,9 @@ export function DetailPhotosScreen({ onAnalysisComplete }: Props) {
         photos,
       })
       onAnalysisComplete(result)
-    } catch (error: any) {
-      Alert.alert('Analysis failed', error.message)
+    } catch (error) {
+      const err = error as ServiceError
+      Alert.alert('Analysis failed', err.message)
     } finally {
       setAnalyzing(false)
     }
