@@ -5,6 +5,7 @@ import { config } from '../config.js'
 import { PhotoStorageService } from '../services/PhotoStorageService.js'
 import { ImageAnalysisService } from '../services/ImageAnalysisService.js'
 import type { ImageInput } from '../services/ImageAnalysisService.js'
+import { VINLookupService } from '../services/VINLookupService.js'
 
 interface AnalyzeBody {
   inspectionId: string
@@ -58,6 +59,29 @@ export const analyzeRoute: FastifyPluginAsync = async (fastify) => {
       const analysis = await analysisService.analyzeImages(imageInputs)
 
       return reply.send({ storedPhotos, analysis })
+    } catch (error) {
+      const err = error as Error
+      return reply.status(500).send({ error: err.message })
+    }
+  })
+
+  fastify.post('/api/analyze/vin', {
+    schema: {
+      body: {
+        type: 'object',
+        required: ['vin'],
+        properties: {
+          vin: { type: 'string' },
+        },
+      },
+    },
+  }, async (request, reply) => {
+    try {
+      const { vin } = request.body as { vin: string }
+      const anthropic = new Anthropic({ apiKey: config.anthropicApiKey })
+      const vinService = new VINLookupService(anthropic)
+      const result = await vinService.lookupVin(vin)
+      return reply.send(result)
     } catch (error) {
       const err = error as Error
       return reply.status(500).send({ error: err.message })
