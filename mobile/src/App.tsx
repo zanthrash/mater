@@ -29,6 +29,7 @@ export default function App() {
   const [resolvedData, setResolvedData] = useState<Record<string, string | number | null> | null>(null)
   const [conditionData, setConditionData] = useState<ConditionFormData | null>(null)
   const [submitResult, setSubmitResult] = useState<{ inspectionId: string; pdfUrl: string } | null>(null)
+  const [detailPhotos, setDetailPhotos] = useState<string[]>([])
   const [history, setHistory] = useState<Screen[]>([])
   const draftChecked = useRef(false)
   const screenRef = useRef<Screen>('overview')
@@ -87,6 +88,7 @@ export default function App() {
     setResolvedData(null)
     setConditionData(null)
     setSubmitResult(null)
+    setDetailPhotos([])
     setHistory([])
     setScreen('overview')
     stateManager.clearDraft()
@@ -189,7 +191,7 @@ export default function App() {
   }
 
   if (screen === 'review') {
-    const photoCount = analysisResult?.storedPhotos?.length ?? 0
+    const photoCount = detailPhotos.length
     return (
       <ReviewScreen
         equipmentData={resolvedData as Record<string, unknown> | null}
@@ -246,6 +248,8 @@ export default function App() {
     return (
       <View style={styles.container}>
         <DetailPhotosScreen
+          photos={detailPhotos}
+          onPhotosChange={setDetailPhotos}
           onAnalysisComplete={(result) => {
             setAnalysisResult(result)
             stateManager.saveStep('result', {

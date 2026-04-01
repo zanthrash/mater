@@ -17,13 +17,19 @@ const MIN_PHOTOS = 3
 
 interface Props {
   client?: APIClient
+  photos: string[]
+  onPhotosChange: (photos: string[]) => void
   onAnalysisComplete: (result: AnalyzeImagesResponse) => void
 }
 
-export function DetailPhotosScreen({ client = new APIClient(), onAnalysisComplete }: Props) {
+export function DetailPhotosScreen({
+  client = new APIClient(),
+  photos,
+  onPhotosChange,
+  onAnalysisComplete,
+}: Props) {
   const colors = useThemeColors()
   const [analyzing, setAnalyzing] = useState(false)
-  const [photos, setPhotos] = useState<string[]>([])
   const [cameraOpen, setCameraOpen] = useState(false)
   const [retakeIndex, setRetakeIndex] = useState<number | null>(null)
 
@@ -39,13 +45,11 @@ export function DetailPhotosScreen({ client = new APIClient(), onAnalysisComplet
 
   const handleCapture = (base64: string) => {
     if (retakeIndex !== null) {
-      setPhotos((prev) => {
-        const updated = [...prev]
-        updated[retakeIndex] = base64
-        return updated
-      })
+      const updated = [...photos]
+      updated[retakeIndex] = base64
+      onPhotosChange(updated)
     } else {
-      setPhotos((prev) => [...prev, base64])
+      onPhotosChange([...photos, base64])
     }
     setCameraOpen(false)
     setRetakeIndex(null)
@@ -54,6 +58,10 @@ export function DetailPhotosScreen({ client = new APIClient(), onAnalysisComplet
   const handleCancelCamera = () => {
     setCameraOpen(false)
     setRetakeIndex(null)
+  }
+
+  const handleDeletePhoto = (index: number) => {
+    onPhotosChange(photos.filter((_, i) => i !== index))
   }
 
   const handleAnalyze = async () => {
@@ -87,7 +95,9 @@ export function DetailPhotosScreen({ client = new APIClient(), onAnalysisComplet
   return (
     <View style={styles.container}>
       <Text style={[styles.title, { color: colors.title }]}>Detail Photos</Text>
-      <Text style={[styles.instruction, { color: colors.secondary }]}>Take photos of key equipment areas</Text>
+      <Text style={[styles.instruction, { color: colors.secondary }]}>
+        Take photos of key equipment areas
+      </Text>
 
       {photos.length > 0 && (
         <ScrollView
@@ -97,37 +107,57 @@ export function DetailPhotosScreen({ client = new APIClient(), onAnalysisComplet
           contentContainerStyle={styles.thumbnailRowContent}
         >
           {photos.map((base64, index) => (
-            <TouchableOpacity
-              key={index}
-              onPress={() => handleThumbnailPress(index)}
-              testID={`thumbnail-${index}`}
-            >
-              <Image
-                source={{ uri: `data:image/jpeg;base64,${base64}` }}
-                style={[styles.thumbnail, { backgroundColor: colors.surface }]}
-              />
-            </TouchableOpacity>
+            <View key={index} style={styles.thumbnailWrapper}>
+              <TouchableOpacity
+                onPress={() => handleThumbnailPress(index)}
+                testID={`thumbnail-${index}`}
+              >
+                <Image
+                  source={{ uri: `data:image/jpeg;base64,${base64}` }}
+                  style={[styles.thumbnail, { backgroundColor: colors.surface }]}
+                />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.deleteButton, { backgroundColor: colors.error }]}
+                onPress={() => handleDeletePhoto(index)}
+                testID={`delete-photo-${index}`}
+                accessibilityLabel={`Delete photo ${index + 1}`}
+              >
+                <Text style={styles.deleteButtonText}>✕</Text>
+              </TouchableOpacity>
+            </View>
           ))}
         </ScrollView>
       )}
 
-      <TouchableOpacity style={[styles.button, { backgroundColor: colors.primary }]} onPress={handleAddPhoto} testID="add-photo-button">
+      <TouchableOpacity
+        style={[styles.button, { backgroundColor: colors.primary }]}
+        onPress={handleAddPhoto}
+        testID="add-photo-button"
+      >
         <Text style={styles.buttonText}>Add Photo</Text>
       </TouchableOpacity>
 
-      <Text style={[styles.photoCount, { color: colors.label }]}>{photos.length} photos taken</Text>
+      <Text style={[styles.photoCount, { color: colors.label }]}>
+        {photos.length} photos taken
+      </Text>
 
       {analyzing ? (
         <ActivityIndicator size="large" />
       ) : (
         <TouchableOpacity
-          style={[styles.button, { backgroundColor: canContinue ? colors.success : colors.buttonDisabledBg }]}
+          style={[
+            styles.button,
+            { backgroundColor: canContinue ? colors.success : colors.buttonDisabledBg },
+          ]}
           onPress={handleAnalyze}
           disabled={!canContinue}
           testID="analyze-button"
         >
           <Text style={styles.buttonText}>
-            {canContinue ? 'Analyze Photos' : `Need ${photosNeeded} more photo${photosNeeded === 1 ? '' : 's'}`}
+            {canContinue
+              ? 'Analyze Photos'
+              : `Need ${photosNeeded} more photo${photosNeeded === 1 ? '' : 's'}`}
           </Text>
         </TouchableOpacity>
       )}
@@ -160,10 +190,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     gap: 8,
   },
+  thumbnailWrapper: {
+    position: 'relative',
+  },
   thumbnail: {
     width: 80,
     height: 80,
     borderRadius: 8,
+  },
+  deleteButton: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deleteButtonText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '700',
+    lineHeight: 12,
   },
   button: {
     paddingVertical: 12,
