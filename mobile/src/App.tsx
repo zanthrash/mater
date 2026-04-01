@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { View, StyleSheet, Alert } from 'react-native'
+import { Alert } from 'react-native'
 import { OverviewScreen } from './screens/OverviewScreen'
 import { VINEntryScreen } from './screens/VINEntryScreen'
 import { DetailPhotosScreen } from './screens/DetailPhotosScreen'
@@ -138,6 +138,8 @@ export default function App() {
   if (screen === 'vin') {
     return (
       <VINEntryScreen
+        onBack={goBack}
+        onRestart={resetAll}
         onContinue={(vin, vinResult) => {
           setVinData({ vin, result: vinResult })
           stateManager.saveStep('photos', {
@@ -152,19 +154,19 @@ export default function App() {
 
   if (screen === 'photos') {
     return (
-      <View style={styles.container}>
-        <DetailPhotosScreen
-          photos={detailPhotos}
-          onPhotosChange={setDetailPhotos}
-          onAnalysisComplete={(result) => {
-            setAnalysisResult(result)
-            stateManager.saveStep('result', {
-              aiResult: result.analysis,
-            })
-            navigate('result')
-          }}
-        />
-      </View>
+      <DetailPhotosScreen
+        photos={detailPhotos}
+        onPhotosChange={setDetailPhotos}
+        onBack={goBack}
+        onRestart={resetAll}
+        onAnalysisComplete={(result) => {
+          setAnalysisResult(result)
+          stateManager.saveStep('result', {
+            aiResult: result.analysis,
+          })
+          navigate('result')
+        }}
+      />
     )
   }
 
@@ -172,6 +174,8 @@ export default function App() {
     return (
       <AIResultScreen
         analysis={analysisResult?.analysis ?? null}
+        onBack={goBack}
+        onRestart={resetAll}
         onNext={() => {
           stateManager.saveStep('conflict', {
             aiResult: analysisResult?.analysis ?? null,
@@ -189,6 +193,8 @@ export default function App() {
       <ConflictResolutionView
         aiResult={aiResult}
         vinResult={vinResult}
+        onBack={goBack}
+        onRestart={resetAll}
         onResolved={(resolved) => {
           setResolvedData(resolved)
           navigate('condition')
@@ -203,6 +209,8 @@ export default function App() {
       <ConditionAssessmentScreen
         conditionSummary={conditionSummary}
         initialData={conditionData}
+        onBack={goBack}
+        onRestart={resetAll}
         onContinue={(data) => {
           setConditionData(data)
           navigate('review')
@@ -218,6 +226,8 @@ export default function App() {
         equipmentData={resolvedData as Record<string, unknown> | null}
         conditionData={conditionData}
         photoCount={photoCount}
+        onBack={goBack}
+        onRestart={resetAll}
         onSubmit={async (inspectorName) => {
           let gpsLat: number | undefined
           let gpsLon: number | undefined
@@ -268,8 +278,3 @@ export default function App() {
   return null
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-})

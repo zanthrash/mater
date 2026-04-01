@@ -8,6 +8,7 @@ import {
   TextInput,
 } from 'react-native'
 import { useThemeColors, ThemeColors } from '../theme'
+import { WizardHeader } from '../components/WizardHeader'
 
 export type Rating = 'Excellent' | 'Good' | 'Fair' | 'Poor' | 'Salvage'
 
@@ -35,6 +36,8 @@ interface Props {
   conditionSummary?: string | null
   initialData?: ConditionFormData | null
   onContinue: (conditionData: ConditionFormData) => void
+  onBack?: () => void
+  onRestart?: () => void
 }
 
 function RatingPicker({
@@ -81,7 +84,7 @@ const SECTIONS: Array<{ key: 'engine' | 'hydraulics' | 'undercarriage' | 'cab'; 
   { key: 'cab', label: 'Cab' },
 ]
 
-export function ConditionAssessmentScreen({ conditionSummary, initialData, onContinue }: Props) {
+export function ConditionAssessmentScreen({ conditionSummary, initialData, onContinue, onBack, onRestart }: Props) {
   const colors = useThemeColors()
   const [overall, setOverall] = useState<Rating>(initialData?.overall ?? 'Good')
   const [sections, setSections] = useState<Record<string, SectionData>>({
@@ -118,9 +121,9 @@ export function ConditionAssessmentScreen({ conditionSummary, initialData, onCon
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={[styles.title, { color: colors.title }]}>Condition Assessment</Text>
-
+    <View style={styles.outerContainer}>
+      <WizardHeader title="Condition Assessment" showBack onBack={onBack} showMenu onRestart={onRestart} />
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {conditionSummary ? (
         <View style={[styles.summaryBox, { backgroundColor: colors.surfaceAlt }]}>
           <Text style={[styles.summaryLabel, { color: colors.label }]}>AI Condition Summary</Text>
@@ -160,11 +163,15 @@ export function ConditionAssessmentScreen({ conditionSummary, initialData, onCon
       >
         <Text style={styles.continueButtonText}>Continue</Text>
       </TouchableOpacity>
-    </ScrollView>
+      </ScrollView>
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
+  outerContainer: {
+    flex: 1,
+  },
   container: {
     flex: 1,
   },

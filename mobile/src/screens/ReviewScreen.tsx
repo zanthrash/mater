@@ -9,15 +9,18 @@ import {
 } from 'react-native'
 import { useThemeColors } from '../theme'
 import type { ConditionFormData } from './ConditionAssessmentScreen'
+import { WizardHeader } from '../components/WizardHeader'
 
 interface Props {
   equipmentData: Record<string, unknown> | null
   conditionData: ConditionFormData | null
   photoCount: number
   onSubmit: (inspectorName: string) => void
+  onBack?: () => void
+  onRestart?: () => void
 }
 
-export function ReviewScreen({ equipmentData, conditionData, photoCount, onSubmit }: Props) {
+export function ReviewScreen({ equipmentData, conditionData, photoCount, onSubmit, onBack, onRestart }: Props) {
   const colors = useThemeColors()
   const [inspectorName, setInspectorName] = useState('')
 
@@ -31,9 +34,9 @@ export function ReviewScreen({ equipmentData, conditionData, photoCount, onSubmi
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={[styles.title, { color: colors.title }]}>Review & Submit</Text>
-
+    <View style={styles.outerContainer}>
+      <WizardHeader title="Review & Submit" showBack onBack={onBack} showMenu onRestart={onRestart} />
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.section}>
         <Text style={[styles.sectionHeader, { color: colors.heading }]}>Inspector</Text>
         <TextInput
@@ -81,11 +84,15 @@ export function ReviewScreen({ equipmentData, conditionData, photoCount, onSubmi
       <TouchableOpacity style={[styles.submitButton, { backgroundColor: colors.success }]} onPress={handleSubmit}>
         <Text style={styles.submitButtonText}>Submit Inspection</Text>
       </TouchableOpacity>
-    </ScrollView>
+      </ScrollView>
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
+  outerContainer: {
+    flex: 1,
+  },
   container: {
     flex: 1,
   },

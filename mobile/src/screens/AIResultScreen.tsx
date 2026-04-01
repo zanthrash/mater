@@ -1,6 +1,7 @@
 import React from 'react'
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native'
 import { useThemeColors, ThemeColors } from '../theme'
+import { WizardHeader } from '../components/WizardHeader'
 
 interface EquipmentAnalysis {
   make: string | null
@@ -17,6 +18,8 @@ interface EquipmentAnalysis {
 interface Props {
   analysis: EquipmentAnalysis | null
   onNext: () => void
+  onBack?: () => void
+  onRestart?: () => void
 }
 
 function FieldRow({ label, value, colors }: { label: string; value: string | number | null; colors: ThemeColors }) {
@@ -28,23 +31,26 @@ function FieldRow({ label, value, colors }: { label: string; value: string | num
   )
 }
 
-export function AIResultScreen({ analysis, onNext }: Props) {
+export function AIResultScreen({ analysis, onNext, onBack, onRestart }: Props) {
   const colors = useThemeColors()
 
   if (!analysis) {
     return (
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-        <Text style={[styles.title, { color: colors.title }]}>AI Analysis Result</Text>
-        <Text style={{ fontSize: 14, color: colors.value }}>No analysis available.</Text>
-        <TouchableOpacity style={styles.nextButton} onPress={onNext}>
-          <Text style={styles.nextButtonText}>Next</Text>
-        </TouchableOpacity>
-      </ScrollView>
+      <View style={styles.outerContainer}>
+        <WizardHeader title="AI Analysis" showBack onBack={onBack} showMenu onRestart={onRestart} />
+        <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+          <Text style={{ fontSize: 14, color: colors.value }}>No analysis available.</Text>
+          <TouchableOpacity style={styles.nextButton} onPress={onNext}>
+            <Text style={styles.nextButtonText}>Next</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </View>
     )
   }
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={[styles.title, { color: colors.title }]}>AI Analysis Result</Text>
+    <View style={styles.outerContainer}>
+      <WizardHeader title="AI Analysis" showBack onBack={onBack} showMenu onRestart={onRestart} />
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <FieldRow label="Make" value={analysis.make} colors={colors} />
       <FieldRow label="Model" value={analysis.model} colors={colors} />
       <FieldRow label="Year" value={analysis.year} colors={colors} />
@@ -64,11 +70,15 @@ export function AIResultScreen({ analysis, onNext }: Props) {
       <TouchableOpacity style={styles.nextButton} onPress={onNext}>
         <Text style={styles.nextButtonText}>Next</Text>
       </TouchableOpacity>
-    </ScrollView>
+      </ScrollView>
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
+  outerContainer: {
+    flex: 1,
+  },
   container: {
     flex: 1,
   },

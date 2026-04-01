@@ -11,6 +11,7 @@ import {
 } from 'react-native'
 import { APIClient, AnalyzeImagesResponse, ServiceError } from '../services/APIClient'
 import { CameraViewfinder } from '../components/CameraViewfinder'
+import { WizardHeader } from '../components/WizardHeader'
 import { useThemeColors } from '../theme'
 
 const MIN_PHOTOS = 3
@@ -20,6 +21,8 @@ interface Props {
   photos: string[]
   onPhotosChange: (photos: string[]) => void
   onAnalysisComplete: (result: AnalyzeImagesResponse) => void
+  onBack?: () => void
+  onRestart?: () => void
 }
 
 export function DetailPhotosScreen({
@@ -27,6 +30,8 @@ export function DetailPhotosScreen({
   photos,
   onPhotosChange,
   onAnalysisComplete,
+  onBack,
+  onRestart,
 }: Props) {
   const colors = useThemeColors()
   const [analyzing, setAnalyzing] = useState(false)
@@ -93,8 +98,9 @@ export function DetailPhotosScreen({
   const canContinue = photos.length >= MIN_PHOTOS
 
   return (
-    <View style={styles.container}>
-      <Text style={[styles.title, { color: colors.title }]}>Detail Photos</Text>
+    <View style={styles.outerContainer}>
+      <WizardHeader title="Detail Photos" showBack onBack={onBack} showMenu onRestart={onRestart} />
+      <View style={styles.container}>
       <Text style={[styles.instruction, { color: colors.secondary }]}>
         Take photos of key equipment areas
       </Text>
@@ -161,11 +167,15 @@ export function DetailPhotosScreen({
           </Text>
         </TouchableOpacity>
       )}
+      </View>
     </View>
   )
 }
 
 const styles = StyleSheet.create({
+  outerContainer: {
+    flex: 1,
+  },
   container: {
     flex: 1,
     padding: 24,

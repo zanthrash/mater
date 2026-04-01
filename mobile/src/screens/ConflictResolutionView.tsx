@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
 } from 'react-native'
 import { useThemeColors } from '../theme'
+import { WizardHeader } from '../components/WizardHeader'
 
 interface EquipmentField {
   key: string
@@ -47,6 +48,8 @@ interface Props {
   aiResult: AIResult | null
   vinResult: VINResult | null
   onResolved: (resolvedData: Record<string, string | number | null>) => void
+  onBack?: () => void
+  onRestart?: () => void
 }
 
 type Source = 'ai' | 'vin'
@@ -77,7 +80,7 @@ function computeInitialSelections(
   return selections
 }
 
-export function ConflictResolutionView({ aiResult, vinResult, onResolved }: Props) {
+export function ConflictResolutionView({ aiResult, vinResult, onResolved, onBack, onRestart }: Props) {
   const colors = useThemeColors()
   const [selections, setSelections] = useState<Record<string, Source | null>>(
     () => computeInitialSelections(aiResult, vinResult),
@@ -121,9 +124,9 @@ export function ConflictResolutionView({ aiResult, vinResult, onResolved }: Prop
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={[styles.title, themed.title]}>Resolve Conflicts</Text>
-
+    <View style={styles.outerContainer}>
+      <WizardHeader title="Resolve Conflicts" showBack onBack={onBack} showMenu onRestart={onRestart} />
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {/* Column headers */}
       <View style={[styles.headerRow, themed.headerRow]}>
         <Text style={[styles.headerCell, styles.fieldCell, themed.headerCell]}>Field</Text>
@@ -180,11 +183,15 @@ export function ConflictResolutionView({ aiResult, vinResult, onResolved }: Prop
       <TouchableOpacity style={[styles.continueButton, themed.continueButton]} onPress={handleContinue}>
         <Text style={styles.continueButtonText}>Continue</Text>
       </TouchableOpacity>
-    </ScrollView>
+      </ScrollView>
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
+  outerContainer: {
+    flex: 1,
+  },
   container: {
     flex: 1,
   },

@@ -9,14 +9,17 @@ import {
 } from 'react-native'
 import { APIClient, VinResult } from '../services/APIClient'
 import { VINScannerScreen } from './VINScannerScreen'
+import { WizardHeader } from '../components/WizardHeader'
 import { useThemeColors } from '../theme'
 
 interface Props {
   client?: APIClient
   onContinue: (vin: string, vinResult: VinResult | null) => void
+  onBack?: () => void
+  onRestart?: () => void
 }
 
-export function VINEntryScreen({ client = new APIClient(), onContinue }: Props) {
+export function VINEntryScreen({ client = new APIClient(), onContinue, onBack, onRestart }: Props) {
   const colors = useThemeColors()
   const [vin, setVin] = useState('')
   const [vinResult, setVinResult] = useState<VinResult | null>(null)
@@ -75,9 +78,9 @@ export function VINEntryScreen({ client = new APIClient(), onContinue }: Props) 
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={[styles.title, themed.title]}>VIN / Serial Number</Text>
-
+    <View style={styles.outerContainer}>
+      <WizardHeader title="VIN / Serial Number" showBack onBack={onBack} showMenu onRestart={onRestart} />
+      <View style={styles.container}>
       <TextInput
         style={[styles.input, themed.input]}
         placeholder="Enter VIN"
@@ -124,11 +127,15 @@ export function VINEntryScreen({ client = new APIClient(), onContinue }: Props) 
           onPress={() => onContinue(vin, vinResult)}
         />
       </View>
+      </View>
     </View>
   )
 }
 
 const styles = StyleSheet.create({
+  outerContainer: {
+    flex: 1,
+  },
   container: {
     flex: 1,
     padding: 24,
