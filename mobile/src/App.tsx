@@ -124,6 +124,8 @@ export default function App() {
   if (screen === 'overview') {
     return (
       <OverviewScreen
+        initialPhoto={overviewUri}
+        onPhotoChange={(photo) => setOverviewUri(photo)}
         onContinue={(uri) => {
           setOverviewUri(uri)
           stateManager.saveStep('vin', { overviewUri: uri })
