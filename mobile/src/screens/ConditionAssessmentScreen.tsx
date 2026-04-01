@@ -9,12 +9,12 @@ import {
 } from 'react-native'
 import { useThemeColors, ThemeColors } from '../theme'
 
-type Rating = 'Excellent' | 'Good' | 'Fair' | 'Poor' | 'Salvage'
+export type Rating = 'Excellent' | 'Good' | 'Fair' | 'Poor' | 'Salvage'
 
 const RATINGS: Rating[] = ['Excellent', 'Good', 'Fair', 'Poor', 'Salvage']
 
 export interface SectionCondition {
-  rating: string
+  rating: Rating
   notes: string
 }
 
@@ -86,19 +86,19 @@ export function ConditionAssessmentScreen({ conditionSummary, initialData, onCon
   const [overall, setOverall] = useState<Rating>(initialData?.overall ?? 'Good')
   const [sections, setSections] = useState<Record<string, SectionData>>({
     engine: {
-      rating: (initialData?.engine?.rating as Rating) ?? 'Good',
+      rating: initialData?.engine?.rating ?? 'Good',
       notes: initialData?.engine?.notes ?? '',
     },
     hydraulics: {
-      rating: (initialData?.hydraulics?.rating as Rating) ?? 'Good',
+      rating: initialData?.hydraulics?.rating ?? 'Good',
       notes: initialData?.hydraulics?.notes ?? '',
     },
     undercarriage: {
-      rating: (initialData?.undercarriage?.rating as Rating) ?? 'Good',
+      rating: initialData?.undercarriage?.rating ?? 'Good',
       notes: initialData?.undercarriage?.notes ?? '',
     },
     cab: {
-      rating: (initialData?.cab?.rating as Rating) ?? 'Good',
+      rating: initialData?.cab?.rating ?? 'Good',
       notes: initialData?.cab?.notes ?? '',
     },
   })
