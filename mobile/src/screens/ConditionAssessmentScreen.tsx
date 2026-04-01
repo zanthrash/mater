@@ -33,6 +33,7 @@ interface SectionData {
 
 interface Props {
   conditionSummary?: string | null
+  initialData?: ConditionFormData | null
   onContinue: (conditionData: ConditionFormData) => void
 }
 
@@ -80,14 +81,26 @@ const SECTIONS: Array<{ key: 'engine' | 'hydraulics' | 'undercarriage' | 'cab'; 
   { key: 'cab', label: 'Cab' },
 ]
 
-export function ConditionAssessmentScreen({ conditionSummary, onContinue }: Props) {
+export function ConditionAssessmentScreen({ conditionSummary, initialData, onContinue }: Props) {
   const colors = useThemeColors()
-  const [overall, setOverall] = useState<Rating>('Good')
+  const [overall, setOverall] = useState<Rating>(initialData?.overall ?? 'Good')
   const [sections, setSections] = useState<Record<string, SectionData>>({
-    engine: { rating: 'Good', notes: '' },
-    hydraulics: { rating: 'Good', notes: '' },
-    undercarriage: { rating: 'Good', notes: '' },
-    cab: { rating: 'Good', notes: '' },
+    engine: {
+      rating: (initialData?.engine?.rating as Rating) ?? 'Good',
+      notes: initialData?.engine?.notes ?? '',
+    },
+    hydraulics: {
+      rating: (initialData?.hydraulics?.rating as Rating) ?? 'Good',
+      notes: initialData?.hydraulics?.notes ?? '',
+    },
+    undercarriage: {
+      rating: (initialData?.undercarriage?.rating as Rating) ?? 'Good',
+      notes: initialData?.undercarriage?.notes ?? '',
+    },
+    cab: {
+      rating: (initialData?.cab?.rating as Rating) ?? 'Good',
+      notes: initialData?.cab?.notes ?? '',
+    },
   })
 
   function setSection(key: string, patch: Partial<SectionData>) {

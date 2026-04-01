@@ -202,6 +202,7 @@ export default function App() {
     return (
       <ConditionAssessmentScreen
         conditionSummary={conditionSummary}
+        initialData={conditionData}
         onContinue={(data) => {
           setConditionData(data)
           navigate('review')
