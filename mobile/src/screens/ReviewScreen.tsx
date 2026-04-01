@@ -99,11 +99,6 @@ const styles = StyleSheet.create({
   content: {
     padding: 24,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
-  },
   section: {
     marginBottom: 24,
   },

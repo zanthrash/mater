@@ -87,8 +87,7 @@ export function ConflictResolutionView({ aiResult, vinResult, onResolved, onBack
   )
 
   const themed = useMemo(() => ({
-    title: { color: colors.title },
-    headerCell: { color: colors.secondary },
+headerCell: { color: colors.secondary },
     headerRow: { borderBottomColor: colors.border },
     row: { borderBottomColor: colors.separator },
     conflictRow: { backgroundColor: colors.warningBg },
@@ -197,11 +196,6 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 24,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
   },
   headerRow: {
     flexDirection: 'row',
