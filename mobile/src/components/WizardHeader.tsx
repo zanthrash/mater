@@ -40,7 +40,7 @@ export function WizardHeader({
       <View style={styles.side}>
         {showBack && (
           <TouchableOpacity
-            onPress={onBack}
+            onPress={() => onBack?.()}
             testID="header-back-button"
             accessibilityLabel="Go back"
           >

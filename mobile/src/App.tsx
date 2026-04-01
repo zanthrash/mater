@@ -31,6 +31,9 @@ export default function App() {
   const [submitResult, setSubmitResult] = useState<{ inspectionId: string; pdfUrl: string } | null>(null)
   const [history, setHistory] = useState<Screen[]>([])
   const draftChecked = useRef(false)
+  const screenRef = useRef<Screen>('overview')
+
+  screenRef.current = screen
 
   useEffect(() => {
     if (draftChecked.current) return
@@ -90,7 +93,7 @@ export default function App() {
   }
 
   function navigate(s: Screen) {
-    setHistory((prev) => [...prev, screen])
+    setHistory((prev) => [...prev, screenRef.current])
     setScreen(s)
   }
 
@@ -239,19 +242,23 @@ export default function App() {
     )
   }
 
-  return (
-    <View style={styles.container}>
-      <DetailPhotosScreen
-        onAnalysisComplete={(result) => {
-          setAnalysisResult(result)
-          stateManager.saveStep('result', {
-            aiResult: result.analysis,
-          })
-          navigate('result')
-        }}
-      />
-    </View>
-  )
+  if (screen === 'photos') {
+    return (
+      <View style={styles.container}>
+        <DetailPhotosScreen
+          onAnalysisComplete={(result) => {
+            setAnalysisResult(result)
+            stateManager.saveStep('result', {
+              aiResult: result.analysis,
+            })
+            navigate('result')
+          }}
+        />
+      </View>
+    )
+  }
+
+  return null
 }
 
 const styles = StyleSheet.create({

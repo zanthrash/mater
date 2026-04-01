@@ -22,3 +22,8 @@ it('does not show a back button on the overview screen', () => {
   const { queryByTestId } = render(<App />)
   expect(queryByTestId('header-back-button')).toBeNull()
 })
+
+it('has no menu button on the overview screen', () => {
+  const { queryByTestId } = render(<App />)
+  expect(queryByTestId('header-menu-button')).toBeNull()
+})
