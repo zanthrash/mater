@@ -148,6 +148,24 @@ export default function App() {
     )
   }
 
+  if (screen === 'photos') {
+    return (
+      <View style={styles.container}>
+        <DetailPhotosScreen
+          photos={detailPhotos}
+          onPhotosChange={setDetailPhotos}
+          onAnalysisComplete={(result) => {
+            setAnalysisResult(result)
+            stateManager.saveStep('result', {
+              aiResult: result.analysis,
+            })
+            navigate('result')
+          }}
+        />
+      </View>
+    )
+  }
+
   if (screen === 'result') {
     return (
       <AIResultScreen
@@ -241,24 +259,6 @@ export default function App() {
         pdfUrl={submitResult.pdfUrl}
         onStartNew={resetAll}
       />
-    )
-  }
-
-  if (screen === 'photos') {
-    return (
-      <View style={styles.container}>
-        <DetailPhotosScreen
-          photos={detailPhotos}
-          onPhotosChange={setDetailPhotos}
-          onAnalysisComplete={(result) => {
-            setAnalysisResult(result)
-            stateManager.saveStep('result', {
-              aiResult: result.analysis,
-            })
-            navigate('result')
-          }}
-        />
-      </View>
     )
   }
 
