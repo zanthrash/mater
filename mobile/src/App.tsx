@@ -29,6 +29,7 @@ export default function App() {
   const [resolvedData, setResolvedData] = useState<Record<string, string | number | null> | null>(null)
   const [conditionData, setConditionData] = useState<ConditionFormData | null>(null)
   const [submitResult, setSubmitResult] = useState<{ inspectionId: string; pdfUrl: string } | null>(null)
+  const [history, setHistory] = useState<Screen[]>([])
   const draftChecked = useRef(false)
 
   useEffect(() => {
@@ -83,7 +84,36 @@ export default function App() {
     setResolvedData(null)
     setConditionData(null)
     setSubmitResult(null)
+    setHistory([])
     setScreen('overview')
+    stateManager.clearDraft()
+  }
+
+  function navigate(s: Screen) {
+    setHistory((prev) => [...prev, screen])
+    setScreen(s)
+  }
+
+  function goBack() {
+    if (history.length === 0) return
+    const target = history[history.length - 1]
+
+    if (['conflict', 'result', 'photos', 'vin', 'overview'].includes(target)) {
+      setConditionData(null)
+    }
+    if (['result', 'photos', 'vin', 'overview'].includes(target)) {
+      setResolvedData(null)
+    }
+    if (['photos', 'vin', 'overview'].includes(target)) {
+      setAnalysisResult(null)
+    }
+    if (target === 'overview') {
+      setVinData(null)
+      setOverviewUri(null)
+    }
+
+    setHistory((prev) => prev.slice(0, -1))
+    setScreen(target)
   }
 
   if (screen === 'overview') {
@@ -92,7 +122,7 @@ export default function App() {
         onContinue={(uri) => {
           setOverviewUri(uri)
           stateManager.saveStep('vin', { overviewUri: uri })
-          setScreen('vin')
+          navigate('vin')
         }}
       />
     )
@@ -107,7 +137,7 @@ export default function App() {
             vin,
             vinResult: vinResult ?? null,
           })
-          setScreen('photos')
+          navigate('photos')
         }}
       />
     )
@@ -121,7 +151,7 @@ export default function App() {
           stateManager.saveStep('conflict', {
             aiResult: analysisResult?.analysis ?? null,
           })
-          setScreen('conflict')
+          navigate('conflict')
         }}
       />
     )
@@ -136,7 +166,7 @@ export default function App() {
         vinResult={vinResult}
         onResolved={(resolved) => {
           setResolvedData(resolved)
-          setScreen('condition')
+          navigate('condition')
         }}
       />
     )
@@ -149,7 +179,7 @@ export default function App() {
         conditionSummary={conditionSummary}
         onContinue={(data) => {
           setConditionData(data)
-          setScreen('review')
+          navigate('review')
         }}
       />
     )
@@ -189,7 +219,7 @@ export default function App() {
             })
             await stateManager.clearDraft()
             setSubmitResult(result)
-            setScreen('submit-success')
+            navigate('submit-success')
           } catch (error) {
             const err = error as { message?: string }
             Alert.alert('Submit failed', err.message ?? 'Unknown error')
@@ -217,7 +247,7 @@ export default function App() {
           stateManager.saveStep('result', {
             aiResult: result.analysis,
           })
-          setScreen('result')
+          navigate('result')
         }}
       />
     </View>

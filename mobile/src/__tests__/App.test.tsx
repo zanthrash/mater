@@ -17,3 +17,8 @@ it('renders the overview screen on startup', () => {
   const { getByText } = render(<App />)
   expect(getByText('New Inspection')).toBeTruthy()
 })
+
+it('does not show a back button on the overview screen', () => {
+  const { queryByTestId } = render(<App />)
+  expect(queryByTestId('header-back-button')).toBeNull()
+})
