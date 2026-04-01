@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   TextInput,
 } from 'react-native'
+import { useThemeColors, ThemeColors } from '../theme'
 
 type Rating = 'Excellent' | 'Good' | 'Fair' | 'Poor' | 'Salvage'
 
@@ -38,20 +39,32 @@ interface Props {
 function RatingPicker({
   selected,
   onSelect,
+  colors,
 }: {
   selected: Rating
   onSelect: (r: Rating) => void
+  colors: ThemeColors
 }) {
   return (
     <View style={styles.ratingRow}>
       {RATINGS.map((r) => (
         <TouchableOpacity
           key={r}
-          style={[styles.ratingButton, selected === r && styles.ratingButtonSelected]}
+          style={[
+            styles.ratingButton,
+            { backgroundColor: colors.surface, borderColor: colors.border },
+            selected === r && { backgroundColor: colors.primary, borderColor: colors.primary },
+          ]}
           onPress={() => onSelect(r)}
           accessibilityLabel={`Rate ${r}`}
         >
-          <Text style={[styles.ratingButtonText, selected === r && styles.ratingButtonTextSelected]}>
+          <Text
+            style={[
+              styles.ratingButtonText,
+              { color: colors.label },
+              selected === r && styles.ratingButtonTextSelected,
+            ]}
+          >
             {r}
           </Text>
         </TouchableOpacity>
@@ -68,6 +81,7 @@ const SECTIONS: Array<{ key: 'engine' | 'hydraulics' | 'undercarriage' | 'cab'; 
 ]
 
 export function ConditionAssessmentScreen({ conditionSummary, onContinue }: Props) {
+  const colors = useThemeColors()
   const [overall, setOverall] = useState<Rating>('Good')
   const [sections, setSections] = useState<Record<string, SectionData>>({
     engine: { rating: 'Good', notes: '' },
@@ -92,28 +106,33 @@ export function ConditionAssessmentScreen({ conditionSummary, onContinue }: Prop
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>Condition Assessment</Text>
+      <Text style={[styles.title, { color: colors.title }]}>Condition Assessment</Text>
 
       {conditionSummary ? (
-        <View style={styles.summaryBox}>
-          <Text style={styles.summaryLabel}>AI Condition Summary</Text>
-          <Text style={styles.summaryText}>{conditionSummary}</Text>
+        <View style={[styles.summaryBox, { backgroundColor: colors.surfaceAlt }]}>
+          <Text style={[styles.summaryLabel, { color: colors.label }]}>AI Condition Summary</Text>
+          <Text style={[styles.summaryText, { color: colors.body }]}>{conditionSummary}</Text>
         </View>
       ) : null}
 
-      <Text style={styles.sectionHeader}>Overall Rating</Text>
-      <RatingPicker selected={overall} onSelect={setOverall} />
+      <Text style={[styles.sectionHeader, { color: colors.heading }]}>Overall Rating</Text>
+      <RatingPicker selected={overall} onSelect={setOverall} colors={colors} />
 
       {SECTIONS.map(({ key, label }) => (
-        <View key={key} style={styles.sectionBox}>
-          <Text style={styles.sectionHeader}>{label}</Text>
+        <View key={key} style={[styles.sectionBox, { borderTopColor: colors.separator }]}>
+          <Text style={[styles.sectionHeader, { color: colors.heading }]}>{label}</Text>
           <RatingPicker
             selected={sections[key].rating as Rating}
             onSelect={(r) => setSection(key, { rating: r })}
+            colors={colors}
           />
           <TextInput
-            style={styles.notesInput}
+            style={[
+              styles.notesInput,
+              { color: colors.inputText, borderColor: colors.inputBorder, backgroundColor: colors.inputBg },
+            ]}
             placeholder={`${label} notes...`}
+            placeholderTextColor={colors.placeholder}
             value={sections[key].notes}
             onChangeText={(text) => setSection(key, { notes: text })}
             multiline
@@ -122,7 +141,10 @@ export function ConditionAssessmentScreen({ conditionSummary, onContinue }: Prop
         </View>
       ))}
 
-      <TouchableOpacity style={styles.continueButton} onPress={handleContinue}>
+      <TouchableOpacity
+        style={[styles.continueButton, { backgroundColor: colors.primary }]}
+        onPress={handleContinue}
+      >
         <Text style={styles.continueButtonText}>Continue</Text>
       </TouchableOpacity>
     </ScrollView>
@@ -142,7 +164,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   summaryBox: {
-    backgroundColor: '#EAF4FF',
     borderRadius: 8,
     padding: 12,
     marginBottom: 20,
@@ -150,18 +171,15 @@ const styles = StyleSheet.create({
   summaryLabel: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#555',
     marginBottom: 6,
   },
   summaryText: {
     fontSize: 14,
-    color: '#111',
     lineHeight: 20,
   },
   sectionHeader: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#333',
     marginBottom: 10,
     marginTop: 8,
   },
@@ -176,16 +194,9 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: '#ccc',
-    backgroundColor: '#f5f5f5',
-  },
-  ratingButtonSelected: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
   },
   ratingButtonText: {
     fontSize: 13,
-    color: '#333',
   },
   ratingButtonTextSelected: {
     color: '#fff',
@@ -195,21 +206,17 @@ const styles = StyleSheet.create({
     marginTop: 16,
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: '#eee',
   },
   notesInput: {
     borderWidth: 1,
-    borderColor: '#ccc',
     borderRadius: 6,
     padding: 10,
     fontSize: 14,
     minHeight: 64,
-    color: '#111',
     textAlignVertical: 'top',
   },
   continueButton: {
     marginTop: 32,
-    backgroundColor: '#007AFF',
     paddingVertical: 14,
     borderRadius: 8,
     alignItems: 'center',

@@ -11,6 +11,7 @@ import {
 } from 'react-native'
 import { APIClient, AnalyzeImagesResponse, ServiceError } from '../services/APIClient'
 import { CameraViewfinder } from '../components/CameraViewfinder'
+import { useThemeColors } from '../theme'
 
 const MIN_PHOTOS = 3
 
@@ -20,6 +21,7 @@ interface Props {
 }
 
 export function DetailPhotosScreen({ client = new APIClient(), onAnalysisComplete }: Props) {
+  const colors = useThemeColors()
   const [analyzing, setAnalyzing] = useState(false)
   const [photos, setPhotos] = useState<string[]>([])
   const [cameraOpen, setCameraOpen] = useState(false)
@@ -84,8 +86,8 @@ export function DetailPhotosScreen({ client = new APIClient(), onAnalysisComplet
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Detail Photos</Text>
-      <Text style={styles.instruction}>Take photos of key equipment areas</Text>
+      <Text style={[styles.title, { color: colors.title }]}>Detail Photos</Text>
+      <Text style={[styles.instruction, { color: colors.secondary }]}>Take photos of key equipment areas</Text>
 
       {photos.length > 0 && (
         <ScrollView
@@ -102,24 +104,24 @@ export function DetailPhotosScreen({ client = new APIClient(), onAnalysisComplet
             >
               <Image
                 source={{ uri: `data:image/jpeg;base64,${base64}` }}
-                style={styles.thumbnail}
+                style={[styles.thumbnail, { backgroundColor: colors.surface }]}
               />
             </TouchableOpacity>
           ))}
         </ScrollView>
       )}
 
-      <TouchableOpacity style={styles.button} onPress={handleAddPhoto} testID="add-photo-button">
+      <TouchableOpacity style={[styles.button, { backgroundColor: colors.primary }]} onPress={handleAddPhoto} testID="add-photo-button">
         <Text style={styles.buttonText}>Add Photo</Text>
       </TouchableOpacity>
 
-      <Text style={styles.photoCount}>{photos.length} photos taken</Text>
+      <Text style={[styles.photoCount, { color: colors.label }]}>{photos.length} photos taken</Text>
 
       {analyzing ? (
         <ActivityIndicator size="large" />
       ) : (
         <TouchableOpacity
-          style={[styles.button, styles.analyzeButton, !canContinue && styles.disabledButton]}
+          style={[styles.button, { backgroundColor: canContinue ? colors.success : colors.buttonDisabledBg }]}
           onPress={handleAnalyze}
           disabled={!canContinue}
           testID="analyze-button"
@@ -147,7 +149,6 @@ const styles = StyleSheet.create({
   },
   instruction: {
     fontSize: 16,
-    color: '#555',
     marginBottom: 24,
     textAlign: 'center',
   },
@@ -163,20 +164,12 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 8,
-    backgroundColor: '#e0e0e0',
   },
   button: {
-    backgroundColor: '#007AFF',
     paddingVertical: 12,
     paddingHorizontal: 32,
     borderRadius: 8,
     marginBottom: 16,
-  },
-  analyzeButton: {
-    backgroundColor: '#34C759',
-  },
-  disabledButton: {
-    backgroundColor: '#999',
   },
   buttonText: {
     color: '#fff',
@@ -185,7 +178,6 @@ const styles = StyleSheet.create({
   },
   photoCount: {
     fontSize: 14,
-    color: '#333',
     marginBottom: 16,
   },
 })

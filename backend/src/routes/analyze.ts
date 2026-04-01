@@ -18,6 +18,7 @@ interface AnalyzeBody {
 
 export const analyzeRoute: FastifyPluginAsync = async (fastify) => {
   fastify.post('/api/analyze/images', {
+    bodyLimit: 10 * 1024 * 1024, // 10MB for base64-encoded photos
     schema: {
       body: {
         type: 'object',

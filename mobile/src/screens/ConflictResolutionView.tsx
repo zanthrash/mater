@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   StyleSheet,
   TouchableOpacity,
 } from 'react-native'
+import { useThemeColors } from '../theme'
 
 interface EquipmentField {
   key: string
@@ -77,9 +78,22 @@ function computeInitialSelections(
 }
 
 export function ConflictResolutionView({ aiResult, vinResult, onResolved }: Props) {
+  const colors = useThemeColors()
   const [selections, setSelections] = useState<Record<string, Source | null>>(
     () => computeInitialSelections(aiResult, vinResult),
   )
+
+  const themed = useMemo(() => ({
+    title: { color: colors.title },
+    headerCell: { color: colors.secondary },
+    headerRow: { borderBottomColor: colors.border },
+    row: { borderBottomColor: colors.separator },
+    conflictRow: { backgroundColor: colors.warningBg },
+    fieldLabel: { color: colors.label },
+    valueText: { color: colors.value },
+    checkmark: { color: colors.checkmark },
+    continueButton: { backgroundColor: colors.primary },
+  }), [colors])
 
   function selectSource(fieldKey: string, source: Source) {
     setSelections((prev) => ({ ...prev, [fieldKey]: source }))
@@ -108,13 +122,13 @@ export function ConflictResolutionView({ aiResult, vinResult, onResolved }: Prop
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>Resolve Conflicts</Text>
+      <Text style={[styles.title, themed.title]}>Resolve Conflicts</Text>
 
       {/* Column headers */}
-      <View style={styles.headerRow}>
-        <Text style={[styles.headerCell, styles.fieldCell]}>Field</Text>
-        <Text style={[styles.headerCell, styles.valueCell]}>AI Analysis</Text>
-        <Text style={[styles.headerCell, styles.valueCell]}>VIN Lookup</Text>
+      <View style={[styles.headerRow, themed.headerRow]}>
+        <Text style={[styles.headerCell, styles.fieldCell, themed.headerCell]}>Field</Text>
+        <Text style={[styles.headerCell, styles.valueCell, themed.headerCell]}>AI Analysis</Text>
+        <Text style={[styles.headerCell, styles.valueCell, themed.headerCell]}>VIN Lookup</Text>
       </View>
 
       {FIELDS.map((field) => {
@@ -126,9 +140,9 @@ export function ConflictResolutionView({ aiResult, vinResult, onResolved }: Prop
         return (
           <View
             key={field.key}
-            style={[styles.row, conflict && styles.conflictRow]}
+            style={[styles.row, themed.row, conflict && themed.conflictRow]}
           >
-            <Text style={[styles.cell, styles.fieldCell, styles.fieldLabel]}>
+            <Text style={[styles.cell, styles.fieldCell, styles.fieldLabel, themed.fieldLabel]}>
               {field.label}
             </Text>
 
@@ -138,11 +152,11 @@ export function ConflictResolutionView({ aiResult, vinResult, onResolved }: Prop
               accessible
               accessibilityLabel={`Select AI value for ${field.label}`}
             >
-              <Text style={styles.valueText}>
+              <Text style={[styles.valueText, themed.valueText]}>
                 {aiVal !== null ? String(aiVal) : '—'}
               </Text>
               {selected === 'ai' && (
-                <Text style={styles.checkmark}>✓</Text>
+                <Text style={[styles.checkmark, themed.checkmark]}>✓</Text>
               )}
             </TouchableOpacity>
 
@@ -152,18 +166,18 @@ export function ConflictResolutionView({ aiResult, vinResult, onResolved }: Prop
               accessible
               accessibilityLabel={`Select VIN value for ${field.label}`}
             >
-              <Text style={styles.valueText}>
+              <Text style={[styles.valueText, themed.valueText]}>
                 {vinVal !== null ? String(vinVal) : '—'}
               </Text>
               {selected === 'vin' && (
-                <Text style={styles.checkmark}>✓</Text>
+                <Text style={[styles.checkmark, themed.checkmark]}>✓</Text>
               )}
             </TouchableOpacity>
           </View>
         )
       })}
 
-      <TouchableOpacity style={styles.continueButton} onPress={handleContinue}>
+      <TouchableOpacity style={[styles.continueButton, themed.continueButton]} onPress={handleContinue}>
         <Text style={styles.continueButtonText}>Continue</Text>
       </TouchableOpacity>
     </ScrollView>
@@ -185,24 +199,18 @@ const styles = StyleSheet.create({
   headerRow: {
     flexDirection: 'row',
     borderBottomWidth: 2,
-    borderBottomColor: '#ccc',
     paddingBottom: 8,
     marginBottom: 4,
   },
   headerCell: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#555',
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  conflictRow: {
-    backgroundColor: '#FFF3CD',
   },
   cell: {
     paddingHorizontal: 4,
@@ -218,22 +226,18 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#333',
   },
   valueText: {
     fontSize: 14,
-    color: '#111',
     flex: 1,
   },
   checkmark: {
     fontSize: 16,
-    color: '#28a745',
     fontWeight: 'bold',
     marginLeft: 4,
   },
   continueButton: {
     marginTop: 32,
-    backgroundColor: '#007AFF',
     paddingVertical: 14,
     borderRadius: 8,
     alignItems: 'center',

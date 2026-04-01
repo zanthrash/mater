@@ -29,6 +29,7 @@ export const inspectionsRoute: FastifyPluginAsync = async (fastify) => {
   fastify.post<{ Body: PostBody }>(
     '/api/inspections',
     {
+      bodyLimit: 10 * 1024 * 1024, // 10MB for base64-encoded photos
       schema: {
         body: {
           type: 'object',

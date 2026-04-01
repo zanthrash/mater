@@ -1,5 +1,6 @@
 import React from 'react'
 import { View, Text, StyleSheet, TouchableOpacity, Linking, Alert } from 'react-native'
+import { useThemeColors } from '../theme'
 
 interface Props {
   inspectionId: string
@@ -8,6 +9,8 @@ interface Props {
 }
 
 export function SubmitScreen({ inspectionId, pdfUrl, onStartNew }: Props) {
+  const colors = useThemeColors()
+
   function handleOpenPdf() {
     Linking.openURL(pdfUrl).catch((err: Error) => {
       Alert.alert('Could not open PDF', err.message)
@@ -16,19 +19,22 @@ export function SubmitScreen({ inspectionId, pdfUrl, onStartNew }: Props) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Inspection Complete!</Text>
+      <Text style={[styles.title, { color: colors.success }]}>Inspection Complete!</Text>
 
-      <View style={styles.idBox}>
-        <Text style={styles.idLabel}>Inspection ID</Text>
-        <Text style={styles.idValue}>{inspectionId}</Text>
+      <View style={[styles.idBox, { backgroundColor: colors.surface }]}>
+        <Text style={[styles.idLabel, { color: colors.label }]}>Inspection ID</Text>
+        <Text style={[styles.idValue, { color: colors.value }]}>{inspectionId}</Text>
       </View>
 
-      <TouchableOpacity style={styles.pdfButton} onPress={handleOpenPdf}>
+      <TouchableOpacity style={[styles.pdfButton, { backgroundColor: colors.primary }]} onPress={handleOpenPdf}>
         <Text style={styles.pdfButtonText}>Open PDF Report</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.newButton} onPress={onStartNew}>
-        <Text style={styles.newButtonText}>Start New Inspection</Text>
+      <TouchableOpacity
+        style={[styles.newButton, { backgroundColor: colors.secondaryButtonBg, borderColor: colors.secondaryButtonBorder }]}
+        onPress={onStartNew}
+      >
+        <Text style={[styles.newButtonText, { color: colors.secondaryButtonText }]}>Start New Inspection</Text>
       </TouchableOpacity>
     </View>
   )
@@ -46,10 +52,8 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 32,
     textAlign: 'center',
-    color: '#28a745',
   },
   idBox: {
-    backgroundColor: '#f5f5f5',
     borderRadius: 8,
     padding: 16,
     marginBottom: 32,
@@ -59,16 +63,13 @@ const styles = StyleSheet.create({
   idLabel: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#555',
     marginBottom: 6,
   },
   idValue: {
     fontSize: 14,
-    color: '#111',
     fontFamily: 'monospace',
   },
   pdfButton: {
-    backgroundColor: '#007AFF',
     paddingVertical: 14,
     paddingHorizontal: 32,
     borderRadius: 8,
@@ -82,17 +83,14 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   newButton: {
-    backgroundColor: '#f5f5f5',
     paddingVertical: 14,
     paddingHorizontal: 32,
     borderRadius: 8,
     alignItems: 'center',
     width: '100%',
     borderWidth: 1,
-    borderColor: '#ccc',
   },
   newButtonText: {
-    color: '#333',
     fontSize: 16,
     fontWeight: '600',
   },

@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   TextInput,
 } from 'react-native'
+import { useThemeColors } from '../theme'
 import type { ConditionFormData } from './ConditionAssessmentScreen'
 
 interface Props {
@@ -17,6 +18,7 @@ interface Props {
 }
 
 export function ReviewScreen({ equipmentData, conditionData, photoCount, onSubmit }: Props) {
+  const colors = useThemeColors()
   const [inspectorName, setInspectorName] = useState('')
 
   const make = equipmentData?.make != null ? String(equipmentData.make) : '—'
@@ -30,13 +32,14 @@ export function ReviewScreen({ equipmentData, conditionData, photoCount, onSubmi
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>Review & Submit</Text>
+      <Text style={[styles.title, { color: colors.title }]}>Review & Submit</Text>
 
       <View style={styles.section}>
-        <Text style={styles.sectionHeader}>Inspector</Text>
+        <Text style={[styles.sectionHeader, { color: colors.heading }]}>Inspector</Text>
         <TextInput
-          style={styles.input}
+          style={[styles.input, { color: colors.inputText, borderColor: colors.inputBorder, backgroundColor: colors.inputBg }]}
           placeholder="Field Inspector"
+          placeholderTextColor={colors.placeholder}
           value={inspectorName}
           onChangeText={setInspectorName}
           accessibilityLabel="Inspector name"
@@ -44,38 +47,38 @@ export function ReviewScreen({ equipmentData, conditionData, photoCount, onSubmi
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionHeader}>Equipment</Text>
-        <View style={styles.row}>
-          <Text style={styles.label}>Make</Text>
-          <Text style={styles.value}>{make}</Text>
+        <Text style={[styles.sectionHeader, { color: colors.heading }]}>Equipment</Text>
+        <View style={[styles.row, { borderBottomColor: colors.separator }]}>
+          <Text style={[styles.label, { color: colors.label }]}>Make</Text>
+          <Text style={[styles.value, { color: colors.value }]}>{make}</Text>
         </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>Model</Text>
-          <Text style={styles.value}>{model}</Text>
+        <View style={[styles.row, { borderBottomColor: colors.separator }]}>
+          <Text style={[styles.label, { color: colors.label }]}>Model</Text>
+          <Text style={[styles.value, { color: colors.value }]}>{model}</Text>
         </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>Year</Text>
-          <Text style={styles.value}>{year}</Text>
-        </View>
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionHeader}>Condition</Text>
-        <View style={styles.row}>
-          <Text style={styles.label}>Overall Rating</Text>
-          <Text style={styles.value}>{overall}</Text>
+        <View style={[styles.row, { borderBottomColor: colors.separator }]}>
+          <Text style={[styles.label, { color: colors.label }]}>Year</Text>
+          <Text style={[styles.value, { color: colors.value }]}>{year}</Text>
         </View>
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionHeader}>Photos</Text>
-        <View style={styles.row}>
-          <Text style={styles.label}>Photo Count</Text>
-          <Text style={styles.value}>{photoCount}</Text>
+        <Text style={[styles.sectionHeader, { color: colors.heading }]}>Condition</Text>
+        <View style={[styles.row, { borderBottomColor: colors.separator }]}>
+          <Text style={[styles.label, { color: colors.label }]}>Overall Rating</Text>
+          <Text style={[styles.value, { color: colors.value }]}>{overall}</Text>
         </View>
       </View>
 
-      <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
+      <View style={styles.section}>
+        <Text style={[styles.sectionHeader, { color: colors.heading }]}>Photos</Text>
+        <View style={[styles.row, { borderBottomColor: colors.separator }]}>
+          <Text style={[styles.label, { color: colors.label }]}>Photo Count</Text>
+          <Text style={[styles.value, { color: colors.value }]}>{photoCount}</Text>
+        </View>
+      </View>
+
+      <TouchableOpacity style={[styles.submitButton, { backgroundColor: colors.success }]} onPress={handleSubmit}>
         <Text style={styles.submitButtonText}>Submit Inspection</Text>
       </TouchableOpacity>
     </ScrollView>
@@ -100,36 +103,29 @@ const styles = StyleSheet.create({
   sectionHeader: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#333',
     marginBottom: 10,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ccc',
     borderRadius: 6,
     padding: 10,
     fontSize: 14,
-    color: '#111',
   },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
   },
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#555',
   },
   value: {
     fontSize: 14,
-    color: '#111',
   },
   submitButton: {
     marginTop: 8,
-    backgroundColor: '#28a745',
     paddingVertical: 14,
     borderRadius: 8,
     alignItems: 'center',

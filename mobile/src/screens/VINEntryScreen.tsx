@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useMemo } from 'react'
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
 } from 'react-native'
 import { APIClient, VinResult } from '../services/APIClient'
 import { VINScannerScreen } from './VINScannerScreen'
+import { useThemeColors } from '../theme'
 
 interface Props {
   client?: APIClient
@@ -16,11 +17,25 @@ interface Props {
 }
 
 export function VINEntryScreen({ client = new APIClient(), onContinue }: Props) {
+  const colors = useThemeColors()
   const [vin, setVin] = useState('')
   const [vinResult, setVinResult] = useState<VinResult | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [scannerOpen, setScannerOpen] = useState(false)
+
+  const themed = useMemo(() => ({
+    title: { color: colors.title },
+    input: {
+      borderColor: colors.inputBorder,
+      color: colors.inputText,
+      backgroundColor: colors.inputBg,
+    },
+    errorBanner: { backgroundColor: colors.errorBg },
+    errorText: { color: colors.error },
+    resultContainer: { backgroundColor: colors.surfaceAlt },
+    resultRow: { color: colors.body },
+  }), [colors])
 
   const handleLookup = async () => {
     setLoading(true)
@@ -61,11 +76,12 @@ export function VINEntryScreen({ client = new APIClient(), onContinue }: Props) 
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>VIN / Serial Number</Text>
+      <Text style={[styles.title, themed.title]}>VIN / Serial Number</Text>
 
       <TextInput
-        style={styles.input}
+        style={[styles.input, themed.input]}
         placeholder="Enter VIN"
+        placeholderTextColor={colors.placeholder}
         value={vin}
         onChangeText={setVin}
         autoCapitalize="characters"
@@ -73,21 +89,21 @@ export function VINEntryScreen({ client = new APIClient(), onContinue }: Props) 
       />
 
       {error !== null && (
-        <View style={styles.errorBanner}>
-          <Text style={styles.errorText}>{error}</Text>
+        <View style={[styles.errorBanner, themed.errorBanner]}>
+          <Text style={[styles.errorText, themed.errorText]}>{error}</Text>
         </View>
       )}
 
       {loading && <ActivityIndicator style={styles.spinner} />}
 
       {vinResult !== null && (
-        <View style={styles.resultContainer}>
-          <Text style={styles.resultRow}>Make: {vinResult.make ?? '\u2014'}</Text>
-          <Text style={styles.resultRow}>Model: {vinResult.model ?? '\u2014'}</Text>
-          <Text style={styles.resultRow}>
+        <View style={[styles.resultContainer, themed.resultContainer]}>
+          <Text style={[styles.resultRow, themed.resultRow]}>Make: {vinResult.make ?? '\u2014'}</Text>
+          <Text style={[styles.resultRow, themed.resultRow]}>Model: {vinResult.model ?? '\u2014'}</Text>
+          <Text style={[styles.resultRow, themed.resultRow]}>
             Year: {vinResult.year !== null ? String(vinResult.year) : '\u2014'}
           </Text>
-          <Text style={styles.resultRow}>
+          <Text style={[styles.resultRow, themed.resultRow]}>
             Source: {vinResult.source === 'nhtsa' ? 'NHTSA' : 'AI'}
           </Text>
         </View>
@@ -125,27 +141,23 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ccc',
     borderRadius: 6,
     padding: 10,
     fontSize: 16,
     marginBottom: 12,
   },
   errorBanner: {
-    backgroundColor: '#fdd',
     borderRadius: 6,
     padding: 10,
     marginBottom: 12,
   },
   errorText: {
-    color: '#c00',
     fontSize: 14,
   },
   spinner: {
     marginBottom: 12,
   },
   resultContainer: {
-    backgroundColor: '#f0f4ff',
     borderRadius: 6,
     padding: 12,
     marginBottom: 16,

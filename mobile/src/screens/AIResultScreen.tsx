@@ -1,5 +1,6 @@
 import React from 'react'
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native'
+import { useThemeColors, ThemeColors } from '../theme'
 
 interface EquipmentAnalysis {
   make: string | null
@@ -18,21 +19,23 @@ interface Props {
   onNext: () => void
 }
 
-function FieldRow({ label, value }: { label: string; value: string | number | null }) {
+function FieldRow({ label, value, colors }: { label: string; value: string | number | null; colors: ThemeColors }) {
   return (
-    <View style={styles.row}>
-      <Text style={styles.label}>{label}</Text>
-      <Text style={styles.value}>{value !== null ? String(value) : '—'}</Text>
+    <View style={[styles.row, { borderBottomColor: colors.separator }]}>
+      <Text style={[styles.label, { color: colors.label }]}>{label}</Text>
+      <Text style={[styles.value, { color: colors.value }]}>{value !== null ? String(value) : '—'}</Text>
     </View>
   )
 }
 
 export function AIResultScreen({ analysis, onNext }: Props) {
+  const colors = useThemeColors()
+
   if (!analysis) {
     return (
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-        <Text style={styles.title}>AI Analysis Result</Text>
-        <Text style={styles.value}>No analysis available.</Text>
+        <Text style={[styles.title, { color: colors.title }]}>AI Analysis Result</Text>
+        <Text style={{ fontSize: 14, color: colors.value }}>No analysis available.</Text>
         <TouchableOpacity style={styles.nextButton} onPress={onNext}>
           <Text style={styles.nextButtonText}>Next</Text>
         </TouchableOpacity>
@@ -41,22 +44,22 @@ export function AIResultScreen({ analysis, onNext }: Props) {
   }
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>AI Analysis Result</Text>
-      <FieldRow label="Make" value={analysis.make} />
-      <FieldRow label="Model" value={analysis.model} />
-      <FieldRow label="Year" value={analysis.year} />
-      <FieldRow label="Engine Type" value={analysis.engineType} />
-      <FieldRow label="Transmission" value={analysis.transmission} />
-      <FieldRow label="GVW (lbs)" value={analysis.gvwLbs} />
-      <FieldRow label="Hours on Meter" value={analysis.hoursOnMeter} />
-      <FieldRow label="Confidence Score" value={analysis.confidenceScore} />
+      <Text style={[styles.title, { color: colors.title }]}>AI Analysis Result</Text>
+      <FieldRow label="Make" value={analysis.make} colors={colors} />
+      <FieldRow label="Model" value={analysis.model} colors={colors} />
+      <FieldRow label="Year" value={analysis.year} colors={colors} />
+      <FieldRow label="Engine Type" value={analysis.engineType} colors={colors} />
+      <FieldRow label="Transmission" value={analysis.transmission} colors={colors} />
+      <FieldRow label="GVW (lbs)" value={analysis.gvwLbs} colors={colors} />
+      <FieldRow label="Hours on Meter" value={analysis.hoursOnMeter} colors={colors} />
+      <FieldRow label="Confidence Score" value={analysis.confidenceScore} colors={colors} />
       {analysis.conditionSummary ? (
-        <View style={styles.summaryContainer}>
-          <Text style={styles.label}>Condition Summary</Text>
-          <Text style={styles.summaryText}>{analysis.conditionSummary}</Text>
+        <View style={[styles.summaryContainer, { borderBottomColor: colors.separator }]}>
+          <Text style={[styles.label, { color: colors.label }]}>Condition Summary</Text>
+          <Text style={[styles.summaryText, { color: colors.body }]}>{analysis.conditionSummary}</Text>
         </View>
       ) : (
-        <FieldRow label="Condition Summary" value={null} />
+        <FieldRow label="Condition Summary" value={null} colors={colors} />
       )}
       <TouchableOpacity style={styles.nextButton} onPress={onNext}>
         <Text style={styles.nextButtonText}>Next</Text>
@@ -82,25 +85,20 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
   },
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#555',
   },
   value: {
     fontSize: 14,
-    color: '#111',
   },
   summaryContainer: {
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
   },
   summaryText: {
     fontSize: 14,
-    color: '#111',
     marginTop: 6,
     lineHeight: 20,
   },

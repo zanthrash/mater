@@ -7,9 +7,11 @@ import {
   Image,
   ActivityIndicator,
   Linking,
+  Dimensions,
+  LayoutChangeEvent,
 } from 'react-native'
 import { CameraView, useCameraPermissions } from 'expo-camera'
-import { PhotoCaptureModule } from '../modules/PhotoCaptureModule'
+import { PhotoCaptureModule, CropRegion } from '../modules/PhotoCaptureModule'
 import { APIClient } from '../services/APIClient'
 
 export interface VINScannerScreenProps {
@@ -28,9 +30,17 @@ export function VINScannerScreen({
   const [permission, requestPermission] = useCameraPermissions()
   const [flash, setFlash] = useState<'off' | 'on'>('off')
   const [capturedUri, setCapturedUri] = useState<string | null>(null)
+  const [photoDims, setPhotoDims] = useState<{ width: number; height: number } | null>(null)
   const [processing, setProcessing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const cameraRef = useRef<CameraView>(null)
+  const guideLayoutRef = useRef<{ x: number; y: number; width: number; height: number } | null>(null)
+
+  const handleGuideLayout = (e: LayoutChangeEvent) => {
+    e.target.measureInWindow((x, y, width, height) => {
+      guideLayoutRef.current = { x, y, width, height }
+    })
+  }
 
   const getViewState = (): ViewState => {
     if (!permission) return 'requesting-permission'
@@ -50,13 +60,47 @@ export function VINScannerScreen({
     const photo = await cameraRef.current.takePictureAsync()
     if (photo) {
       setCapturedUri(photo.uri)
+      setPhotoDims({ width: photo.width, height: photo.height })
       setError(null)
     }
   }
 
   const handleRetake = () => {
     setCapturedUri(null)
+    setPhotoDims(null)
     setError(null)
+  }
+
+  const computeCropRegion = (): CropRegion | undefined => {
+    const guide = guideLayoutRef.current
+    if (!guide || !photoDims) return undefined
+
+    const { width: screenW, height: screenH } = Dimensions.get('window')
+    const { width: photoW, height: photoH } = photoDims
+
+    const previewAspect = screenW / screenH
+    const photoAspect = photoW / photoH
+
+    let scale: number
+    let offsetX = 0
+    let offsetY = 0
+
+    if (photoAspect > previewAspect) {
+      // Photo is wider than preview — height fills screen, width is cropped
+      scale = photoH / screenH
+      offsetX = (photoW - screenW * scale) / 2
+    } else {
+      // Photo is taller than preview — width fills screen, height is cropped
+      scale = photoW / screenW
+      offsetY = (photoH - screenH * scale) / 2
+    }
+
+    return {
+      originX: Math.max(0, Math.round(offsetX + guide.x * scale)),
+      originY: Math.max(0, Math.round(offsetY + guide.y * scale)),
+      width: Math.round(guide.width * scale),
+      height: Math.round(guide.height * scale),
+    }
   }
 
   const handleUsePhoto = async () => {
@@ -65,7 +109,8 @@ export function VINScannerScreen({
     setError(null)
     try {
       const module = new PhotoCaptureModule()
-      const result = await module.processPhoto(capturedUri, 'vin')
+      const crop = computeCropRegion()
+      const result = await module.processPhoto(capturedUri, 'vin', crop)
       const ocrResult = await client.analyzeVinOcr(result.base64)
       onVinScanned(ocrResult.vin)
     } catch (err) {
@@ -163,7 +208,7 @@ export function VINScannerScreen({
         <View style={styles.framingDimTop} />
         <View style={styles.framingMiddleRow}>
           <View style={styles.framingDimSide} />
-          <View style={styles.framingGuide} />
+          <View style={styles.framingGuide} onLayout={handleGuideLayout} />
           <View style={styles.framingDimSide} />
         </View>
         <View style={styles.framingLabelContainer}>

@@ -1,12 +1,14 @@
 import React, { useState, useCallback } from 'react'
 import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native'
 import { CameraViewfinder } from '../components/CameraViewfinder'
+import { useThemeColors } from '../theme'
 
 interface Props {
   onContinue: (overviewBase64: string) => void
 }
 
 export function OverviewScreen({ onContinue }: Props) {
+  const colors = useThemeColors()
   const [photoBase64, setPhotoBase64] = useState<string | null>(null)
   const [cameraOpen, setCameraOpen] = useState(false)
 
@@ -25,8 +27,8 @@ export function OverviewScreen({ onContinue }: Props) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>New Inspection</Text>
-      <Text style={styles.instruction}>
+      <Text style={[styles.title, { color: colors.title }]}>New Inspection</Text>
+      <Text style={[styles.instruction, { color: colors.secondary }]}>
         Take an overview photo of the equipment to begin.
       </Text>
 
@@ -38,13 +40,13 @@ export function OverviewScreen({ onContinue }: Props) {
         >
           <Image
             source={{ uri: `data:image/jpeg;base64,${photoBase64}` }}
-            style={styles.thumbnail}
+            style={[styles.thumbnail, { backgroundColor: colors.surface }]}
           />
-          <Text style={styles.retakeHint}>Tap to retake</Text>
+          <Text style={[styles.retakeHint, { color: colors.primary }]}>Tap to retake</Text>
         </TouchableOpacity>
       ) : (
         <TouchableOpacity
-          style={styles.takePhotoButton}
+          style={[styles.takePhotoButton, { backgroundColor: colors.primary }]}
           onPress={() => setCameraOpen(true)}
           testID="take-photo-button"
         >
@@ -53,7 +55,10 @@ export function OverviewScreen({ onContinue }: Props) {
       )}
 
       <TouchableOpacity
-        style={[styles.continueButton, !photoBase64 && styles.continueButtonDisabled]}
+        style={[
+          styles.continueButton,
+          { backgroundColor: photoBase64 ? colors.success : colors.buttonDisabledBg },
+        ]}
         disabled={!photoBase64}
         onPress={() => {
           if (photoBase64) {
@@ -62,7 +67,10 @@ export function OverviewScreen({ onContinue }: Props) {
         }}
         testID="continue-button"
       >
-        <Text style={[styles.continueButtonText, !photoBase64 && styles.continueButtonTextDisabled]}>
+        <Text style={[
+          styles.continueButtonText,
+          !photoBase64 && { color: colors.buttonDisabledText },
+        ]}>
           Continue
         </Text>
       </TouchableOpacity>
@@ -85,7 +93,6 @@ const styles = StyleSheet.create({
   instruction: {
     fontSize: 16,
     marginBottom: 24,
-    color: '#555',
     textAlign: 'center',
   },
   thumbnailContainer: {
@@ -96,15 +103,12 @@ const styles = StyleSheet.create({
     width: 200,
     height: 200,
     borderRadius: 12,
-    backgroundColor: '#eee',
   },
   retakeHint: {
     fontSize: 13,
-    color: '#007AFF',
     marginTop: 8,
   },
   takePhotoButton: {
-    backgroundColor: '#007AFF',
     paddingVertical: 14,
     paddingHorizontal: 32,
     borderRadius: 8,
@@ -116,20 +120,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   continueButton: {
-    backgroundColor: '#34C759',
     paddingVertical: 14,
     paddingHorizontal: 48,
     borderRadius: 8,
-  },
-  continueButtonDisabled: {
-    backgroundColor: '#ccc',
   },
   continueButtonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
-  },
-  continueButtonTextDisabled: {
-    color: '#999',
   },
 })
