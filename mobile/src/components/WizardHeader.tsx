@@ -1,5 +1,6 @@
 import React from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useThemeColors } from '../theme'
 
 interface Props {
@@ -18,6 +19,7 @@ export function WizardHeader({
   onRestart,
 }: Props) {
   const colors = useThemeColors()
+  const insets = useSafeAreaInsets()
 
   function handleMenuPress() {
     Alert.alert(
@@ -34,7 +36,7 @@ export function WizardHeader({
     <View
       style={[
         styles.container,
-        { borderBottomColor: colors.separator, backgroundColor: colors.background },
+        { paddingTop: insets.top + 10, borderBottomColor: colors.separator, backgroundColor: colors.background },
       ]}
     >
       <View style={styles.side}>
@@ -75,7 +77,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    height: 52,
+    paddingBottom: 10,
     paddingHorizontal: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },

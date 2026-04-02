@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Alert } from 'react-native'
+import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { OverviewScreen } from './screens/OverviewScreen'
 import { VINEntryScreen } from './screens/VINEntryScreen'
 import { DetailPhotosScreen } from './screens/DetailPhotosScreen'
@@ -21,7 +22,7 @@ const validScreens: Screen[] = ['overview', 'vin', 'photos', 'result', 'conflict
 const stateManager = new WizardStateManager()
 const client = new APIClient()
 
-export default function App() {
+function AppContent() {
   const [screen, setScreen] = useState<Screen>('overview')
   const [analysisResult, setAnalysisResult] = useState<AnalyzeImagesResponse | null>(null)
   const [overviewUri, setOverviewUri] = useState<string | null>(null)
@@ -276,5 +277,13 @@ export default function App() {
   }
 
   return null
+}
+
+export default function App() {
+  return (
+    <SafeAreaProvider>
+      <AppContent />
+    </SafeAreaProvider>
+  )
 }
 

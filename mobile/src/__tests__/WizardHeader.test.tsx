@@ -1,6 +1,7 @@
 import React from 'react'
 import { render, fireEvent } from '@testing-library/react-native'
 import { Alert } from 'react-native'
+import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { WizardHeader } from '../components/WizardHeader'
 
 jest.mock('react-native/Libraries/Utilities/useColorScheme', () => ({
@@ -9,31 +10,31 @@ jest.mock('react-native/Libraries/Utilities/useColorScheme', () => ({
 
 describe('WizardHeader', () => {
   it('renders the title', () => {
-    const { getByText } = render(<WizardHeader title="VIN Entry" />)
+    const { getByText } = render(<SafeAreaProvider><WizardHeader title="VIN Entry" /></SafeAreaProvider>)
     expect(getByText('VIN Entry')).toBeTruthy()
   })
 
   it('hides back button by default', () => {
-    const { queryByTestId } = render(<WizardHeader title="Test" />)
+    const { queryByTestId } = render(<SafeAreaProvider><WizardHeader title="Test" /></SafeAreaProvider>)
     expect(queryByTestId('header-back-button')).toBeNull()
   })
 
   it('shows back button when showBack=true and calls onBack when pressed', () => {
     const onBack = jest.fn()
     const { getByTestId } = render(
-      <WizardHeader title="Test" showBack onBack={onBack} />
+      <SafeAreaProvider><WizardHeader title="Test" showBack onBack={onBack} /></SafeAreaProvider>
     )
     fireEvent.press(getByTestId('header-back-button'))
     expect(onBack).toHaveBeenCalledTimes(1)
   })
 
   it('hides menu button by default', () => {
-    const { queryByTestId } = render(<WizardHeader title="Test" />)
+    const { queryByTestId } = render(<SafeAreaProvider><WizardHeader title="Test" /></SafeAreaProvider>)
     expect(queryByTestId('header-menu-button')).toBeNull()
   })
 
   it('shows menu button when showMenu=true', () => {
-    const { getByTestId } = render(<WizardHeader title="Test" showMenu />)
+    const { getByTestId } = render(<SafeAreaProvider><WizardHeader title="Test" showMenu /></SafeAreaProvider>)
     expect(getByTestId('header-menu-button')).toBeTruthy()
   })
 
@@ -41,7 +42,7 @@ describe('WizardHeader', () => {
     const onRestart = jest.fn()
     const alertSpy = jest.spyOn(Alert, 'alert')
     const { getByTestId } = render(
-      <WizardHeader title="Test" showMenu onRestart={onRestart} />
+      <SafeAreaProvider><WizardHeader title="Test" showMenu onRestart={onRestart} /></SafeAreaProvider>
     )
     fireEvent.press(getByTestId('header-menu-button'))
     expect(alertSpy).toHaveBeenCalledWith(
