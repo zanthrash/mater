@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, Image } from 'react-native'
 import { useThemeColors } from '../theme'
 import type { Asset } from '../services/APIClient'
 import { WizardHeader } from '../components/WizardHeader'
+import { camelToTitle } from '../utils/formatting'
 
 interface IntakeEvent {
   id: string
@@ -102,7 +103,7 @@ export function AssetDetailScreen({ asset, intakeEvents, onBack }: Props) {
           <View style={styles.section}>
             <SectionHeader title="Type-Specific Specs" />
             {typeSpecificKeys.map((key) => (
-              <Row key={key} label={key} value={asset.type_specific_specs[key]} />
+              <Row key={key} label={camelToTitle(key)} value={asset.type_specific_specs[key]} />
             ))}
           </View>
         )}

@@ -12,6 +12,7 @@ import {
 } from 'react-native'
 import { useThemeColors } from '../theme'
 import { WizardHeader } from '../components/WizardHeader'
+import { camelToTitle } from '../utils/formatting'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -188,7 +189,7 @@ export function ReviewEditScreen({
   })
 
   const [editedTypeSpecs, setEditedTypeSpecs] = useState<Array<{ id: string; key: string; value: string }>>(
-    Object.entries(typeSpecificSpecs).map(([key, value], index) => ({ id: String(index), key, value: String(value ?? '') })),
+    Object.entries(typeSpecificSpecs).map(([key, value], index) => ({ id: String(index), key: camelToTitle(key), value: String(value ?? '') })),
   )
 
   // Initialize aiPopulatedFields from initial props
@@ -251,14 +252,14 @@ export function ReviewEditScreen({
 
       if (prev.length === 0) {
         // No user entries yet — replace entirely
-        return incomingEntries.map(([key, value], index) => ({ id: String(index), key, value: String(value ?? '') }))
+        return incomingEntries.map(([key, value], index) => ({ id: String(index), key: camelToTitle(key), value: String(value ?? '') }))
       }
 
       // User has entries — append only keys not already present
       const existingKeys = new Set(prev.map((s) => s.key))
       const toAdd = incomingEntries
-        .filter(([key]) => !existingKeys.has(key))
-        .map(([key, value]) => ({ id: String(Date.now()) + String(Math.random()), key, value: String(value ?? '') }))
+        .filter(([key]) => !existingKeys.has(camelToTitle(key)))
+        .map(([key, value]) => ({ id: String(Date.now()) + String(Math.random()), key: camelToTitle(key), value: String(value ?? '') }))
 
       return toAdd.length > 0 ? [...prev, ...toAdd] : prev
     })
