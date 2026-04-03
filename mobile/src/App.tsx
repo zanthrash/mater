@@ -33,6 +33,8 @@ function AppContent() {
   const [classificationResult, setClassificationResult] = useState<ClassificationResult | null>(null)
   const [photos, setPhotos] = useState<AssetPhoto[]>([])
   const [aiSpecResult, setAiSpecResult] = useState<AnalysisResult | null>(null)
+  const [aiAnalysisLoading, setAiAnalysisLoading] = useState(false)
+  const [aiAnalysisError, setAiAnalysisError] = useState(false)
   const [submitAsset, setSubmitAsset] = useState<Asset | null>(null)
   const [history, setHistory] = useState<Screen[]>([])
   const draftChecked = useRef(false)
@@ -105,11 +107,39 @@ function AppContent() {
     setClassificationResult(null)
     setPhotos([])
     setAiSpecResult(null)
+    setAiAnalysisLoading(false)
+    setAiAnalysisError(false)
     setSubmitAsset(null)
     setHistory([])
     setScreen('home')
     stateManager.clearDraft()
     loadAssets()
+  }
+
+  async function retryAnalysis() {
+    setAiAnalysisLoading(true)
+    setAiAnalysisError(false)
+    try {
+      const taxonomy = classificationResult?.taxonomy
+        ? {
+            category: classificationResult.taxonomy.category,
+            type: classificationResult.taxonomy.type,
+            subtype: classificationResult.taxonomy.subtype,
+          }
+        : null
+      const allPhotos = photos.map((p) => ({
+        base64: p.base64 ?? '',
+        type: p.type,
+        mediaType: 'image/jpeg' as const,
+      }))
+      const result = await client.analyzeImages({ photos: allPhotos, taxonomy })
+      setAiSpecResult(result)
+      stateManager.saveStep('review', { aiSpecResult: result })
+    } catch {
+      setAiAnalysisError(true)
+    } finally {
+      setAiAnalysisLoading(false)
+    }
   }
 
   function navigate(s: Screen) {
@@ -126,12 +156,18 @@ function AppContent() {
       setClassificationResult(null)
       setPhotos([])
       setAiSpecResult(null)
+      setAiAnalysisLoading(false)
+      setAiAnalysisError(false)
     } else if (target === 'vin') {
       setClassificationResult(null)
       setPhotos([])
       setAiSpecResult(null)
+      setAiAnalysisLoading(false)
+      setAiAnalysisError(false)
     } else if (target === 'guided-photos') {
       setAiSpecResult(null)
+      setAiAnalysisLoading(false)
+      setAiAnalysisError(false)
     }
     setHistory((prev) => prev.slice(0, -1))
     setScreen(target)
@@ -216,6 +252,8 @@ function AppContent() {
         }}
         onContinue={async () => {
           navigate('review')
+          setAiAnalysisLoading(true)
+          setAiAnalysisError(false)
           try {
             const taxonomy = classificationResult?.taxonomy
               ? {
@@ -233,7 +271,9 @@ function AppContent() {
             setAiSpecResult(result)
             stateManager.saveStep('review', { aiSpecResult: result })
           } catch {
-            // proceed to review without AI specs
+            setAiAnalysisError(true)
+          } finally {
+            setAiAnalysisLoading(false)
           }
         }}
         onBack={goBack}
@@ -289,6 +329,9 @@ function AppContent() {
           setSubmitAsset(result.asset)
           navigate('submit-success')
         }}
+        aiLoading={aiAnalysisLoading}
+        aiError={aiAnalysisError}
+        onRetryAnalysis={retryAnalysis}
         onBack={goBack}
         onRestart={resetAll}
       />

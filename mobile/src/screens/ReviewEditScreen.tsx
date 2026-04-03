@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   TextInput,
   Image,
   ActivityIndicator,
+  Animated,
 } from 'react-native'
 import { useThemeColors } from '../theme'
 import { WizardHeader } from '../components/WizardHeader'
@@ -70,6 +71,9 @@ interface Props {
   onSubmit: (data: ReviewSubmitData) => Promise<void>
   onBack?: () => void
   onRestart?: () => void
+  aiLoading: boolean
+  aiError: boolean
+  onRetryAnalysis?: () => void
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -82,6 +86,8 @@ function hasConflict(
   return String(aiValue).toLowerCase().trim() !== String(vinValue).toLowerCase().trim()
 }
 
+const CORE_SPEC_KEYS = ['make', 'model', 'year', 'engineType', 'transmission', 'gvwLbs', 'hoursOnMeter'] as const
+
 // ── Sub-components ─────────────────────────────────────────────────────────────
 
 function SectionHeader({ title, colors }: { title: string; colors: ReturnType<typeof useThemeColors> }) {
@@ -90,9 +96,58 @@ function SectionHeader({ title, colors }: { title: string; colors: ReturnType<ty
   )
 }
 
-function FieldLabel({ label, colors }: { label: string; colors: ReturnType<typeof useThemeColors> }) {
+function FieldLabel({
+  label,
+  colors,
+  isAiPopulated,
+  badgeTestID,
+}: {
+  label: string
+  colors: ReturnType<typeof useThemeColors>
+  isAiPopulated?: boolean
+  badgeTestID?: string
+}) {
+  if (isAiPopulated) {
+    return (
+      <View style={styles.fieldLabelRow}>
+        <Text style={[styles.fieldLabel, { color: colors.label }]}>✨ {label}</Text>
+        <View style={[styles.aiBadge, { backgroundColor: colors.aiBadge }]} testID={badgeTestID}>
+          <Text style={[styles.aiBadgeText, { color: colors.aiBadgeText }]}>AI</Text>
+        </View>
+      </View>
+    )
+  }
   return (
     <Text style={[styles.fieldLabel, { color: colors.label }]}>{label}</Text>
+  )
+}
+
+function ShimmerRows({ testID, colors }: { testID: string; colors: ReturnType<typeof useThemeColors> }) {
+  const opacity = useRef(new Animated.Value(0.4)).current
+
+  useEffect(() => {
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacity, { toValue: 1.0, duration: 700, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 0.4, duration: 700, useNativeDriver: true }),
+      ]),
+    )
+    animation.start()
+    return () => animation.stop()
+  }, [opacity])
+
+  return (
+    <View testID={testID}>
+      {[0, 1, 2].map((i) => (
+        <Animated.View
+          key={i}
+          style={[
+            styles.shimmerRow,
+            { backgroundColor: colors.surface, opacity },
+          ]}
+        />
+      ))}
+    </View>
   )
 }
 
@@ -108,8 +163,13 @@ export function ReviewEditScreen({
   onSubmit,
   onBack,
   onRestart,
+  aiLoading,
+  aiError,
+  onRetryAnalysis,
 }: Props) {
   const colors = useThemeColors()
+
+  const manuallyEditedFields = useRef<Set<string>>(new Set())
 
   const [editedTaxonomy, setEditedTaxonomy] = useState({
     category: taxonomy.category,
@@ -127,9 +187,21 @@ export function ReviewEditScreen({
     hoursOnMeter: String(coreSpecs.hoursOnMeter ?? ''),
   })
 
-  const [editedTypeSpecs, setEditedTypeSpecs] = useState<Array<{ key: string; value: string }>>(
-    Object.entries(typeSpecificSpecs).map(([key, value]) => ({ key, value: String(value ?? '') })),
+  const [editedTypeSpecs, setEditedTypeSpecs] = useState<Array<{ id: string; key: string; value: string }>>(
+    Object.entries(typeSpecificSpecs).map(([key, value], index) => ({ id: String(index), key, value: String(value ?? '') })),
   )
+
+  // Initialize aiPopulatedFields from initial props
+  const [aiPopulatedFields, setAiPopulatedFields] = useState<Set<string>>(() => {
+    const fields = new Set<string>()
+    for (const key of CORE_SPEC_KEYS) {
+      if (coreSpecs[key] != null) fields.add(key)
+    }
+    for (const key of Object.keys(typeSpecificSpecs)) {
+      fields.add(key)
+    }
+    return fields
+  })
 
   const [editedYard, setEditedYard] = useState({
     lotNumber: yardMetadata?.lotNumber ?? '',
@@ -138,6 +210,59 @@ export function ReviewEditScreen({
   })
 
   const [submitting, setSubmitting] = useState(false)
+
+  const [showError, setShowError] = useState(aiError)
+
+  // Sync showError when aiError prop changes
+  useEffect(() => {
+    setShowError(aiError)
+  }, [aiError])
+
+  // Reactivity fix: update form state when coreSpecs/typeSpecificSpecs arrive async
+  useEffect(() => {
+    setEditedCoreSpecs((prev) => {
+      const next = { ...prev }
+      for (const key of CORE_SPEC_KEYS) {
+        if (!manuallyEditedFields.current.has(key)) {
+          const val = coreSpecs[key]
+          if (val != null) {
+            next[key] = String(val)
+          }
+        }
+      }
+      return next
+    })
+
+    setAiPopulatedFields((prev) => {
+      const next = new Set(prev)
+      for (const key of CORE_SPEC_KEYS) {
+        if (coreSpecs[key] != null) next.add(key)
+      }
+      for (const key of Object.keys(typeSpecificSpecs)) {
+        next.add(key)
+      }
+      return next
+    })
+
+    setEditedTypeSpecs((prev) => {
+      const incomingEntries = Object.entries(typeSpecificSpecs)
+      if (incomingEntries.length === 0) return prev
+
+      if (prev.length === 0) {
+        // No user entries yet — replace entirely
+        return incomingEntries.map(([key, value], index) => ({ id: String(index), key, value: String(value ?? '') }))
+      }
+
+      // User has entries — append only keys not already present
+      const existingKeys = new Set(prev.map((s) => s.key))
+      const toAdd = incomingEntries
+        .filter(([key]) => !existingKeys.has(key))
+        .map(([key, value]) => ({ id: String(Date.now()) + String(Math.random()), key, value: String(value ?? '') }))
+
+      return toAdd.length > 0 ? [...prev, ...toAdd] : prev
+    })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [coreSpecs, typeSpecificSpecs])
 
   const handleSubmit = async () => {
     setSubmitting(true)
@@ -203,6 +328,24 @@ export function ReviewEditScreen({
       <WizardHeader title="Review & Edit" showBack onBack={onBack} showMenu onRestart={onRestart} />
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
 
+        {/* Error banner */}
+        {aiError && !aiLoading && showError && (
+          <View
+            style={[styles.errorBanner, { backgroundColor: colors.errorBg }]}
+            testID="ai-error-banner"
+          >
+            <Text style={[styles.errorBannerText, { color: colors.error }]}>
+              ⚠ AI analysis failed — fill in manually
+            </Text>
+            <TouchableOpacity onPress={() => onRetryAnalysis?.()} testID="ai-retry-button">
+              <Text style={[styles.errorBannerAction, { color: colors.error }]}>Retry</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setShowError(false)} testID="ai-dismiss-button">
+              <Text style={[styles.errorBannerAction, { color: colors.error }]}>Dismiss</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* Section 1: Taxonomy */}
         <SectionHeader title="Taxonomy" colors={colors} />
         <View style={[styles.sectionBox, { borderColor: colors.border }]}>
@@ -239,95 +382,139 @@ export function ReviewEditScreen({
         {/* Section 2: Core Specs */}
         <SectionHeader title="Core Specs" colors={colors} />
         <View style={[styles.sectionBox, { borderColor: colors.border }]}>
-          {conflictFields.map(({ specKey, label, aiValue, vinValue }) => {
-            const conflict = hasConflict(aiValue, vinValue)
-            return (
-              <View
-                key={specKey}
-                style={[styles.specRow, conflict && { backgroundColor: colors.warningBg }]}
-                testID={conflict ? `conflict-row-${specKey}` : undefined}
-              >
-                <FieldLabel label={label} colors={colors} />
-                {conflict && (
-                  <View style={styles.conflictHints}>
-                    <Text style={[styles.conflictHint, { color: colors.warning }]}>
-                      AI: {String(aiValue)}
-                    </Text>
-                    <Text style={[styles.conflictHint, { color: colors.warning }]}>
-                      VIN: {String(vinValue)}
-                    </Text>
-                    <TouchableOpacity
-                      onPress={() =>
-                        setEditedCoreSpecs((prev) => ({
-                          ...prev,
-                          [specKey]: String(aiValue ?? ''),
-                        }))
-                      }
-                      testID={`use-ai-${specKey}`}
-                    >
-                      <Text style={[styles.useAiLink, { color: colors.primary }]}>Use AI value</Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
-                <TextInput
-                  style={inputStyle}
-                  value={editedCoreSpecs[specKey]}
-                  onChangeText={(text) =>
-                    setEditedCoreSpecs((prev) => ({ ...prev, [specKey]: text }))
-                  }
-                  accessibilityLabel={label}
-                  testID={`spec-${specKey}`}
-                  keyboardType={
-                    specKey === 'year' || specKey === 'gvwLbs' || specKey === 'hoursOnMeter'
-                      ? 'numeric'
-                      : 'default'
-                  }
-                />
-              </View>
-            )
-          })}
+          {aiLoading ? (
+            <ShimmerRows testID="ai-loading-core-specs" colors={colors} />
+          ) : (
+            conflictFields.map(({ specKey, label, aiValue, vinValue }) => {
+              const conflict = hasConflict(aiValue, vinValue)
+              const isAi = aiPopulatedFields.has(specKey)
+              return (
+                <View
+                  key={specKey}
+                  style={[styles.specRow, conflict && { backgroundColor: colors.warningBg }]}
+                  testID={conflict ? `conflict-row-${specKey}` : undefined}
+                >
+                  <FieldLabel
+                    label={label}
+                    colors={colors}
+                    isAiPopulated={isAi}
+                    badgeTestID={isAi ? `ai-badge-${specKey}` : undefined}
+                  />
+                  {conflict && (
+                    <View style={styles.conflictHints}>
+                      <Text style={[styles.conflictHint, { color: colors.warning }]}>
+                        AI: {String(aiValue)}
+                      </Text>
+                      <Text style={[styles.conflictHint, { color: colors.warning }]}>
+                        VIN: {String(vinValue)}
+                      </Text>
+                      <TouchableOpacity
+                        onPress={() =>
+                          setEditedCoreSpecs((prev) => ({
+                            ...prev,
+                            [specKey]: String(aiValue ?? ''),
+                          }))
+                        }
+                        testID={`use-ai-${specKey}`}
+                      >
+                        <Text style={[styles.useAiLink, { color: colors.primary }]}>Use AI value</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                  <TextInput
+                    style={[
+                      inputStyle,
+                      isAi ? { backgroundColor: colors.aiBg } : undefined,
+                    ]}
+                    value={editedCoreSpecs[specKey]}
+                    onChangeText={(text) => {
+                      manuallyEditedFields.current.add(specKey)
+                      setAiPopulatedFields((prev) => {
+                        const next = new Set(prev)
+                        next.delete(specKey)
+                        return next
+                      })
+                      setEditedCoreSpecs((prev) => ({ ...prev, [specKey]: text }))
+                    }}
+                    accessibilityLabel={label}
+                    testID={`spec-${specKey}`}
+                    keyboardType={
+                      specKey === 'year' || specKey === 'gvwLbs' || specKey === 'hoursOnMeter'
+                        ? 'numeric'
+                        : 'default'
+                    }
+                  />
+                </View>
+              )
+            })
+          )}
         </View>
 
         {/* Section 3: Type-Specific Specs */}
         <SectionHeader title="Type-Specific Specs" colors={colors} />
         <View style={[styles.sectionBox, { borderColor: colors.border }]}>
-          {editedTypeSpecs.map((spec, index) => (
-            <View key={index} style={styles.typeSpecRow}>
-              <TextInput
-                style={[inputStyle, styles.typeSpecKeyInput]}
-                value={spec.key}
-                onChangeText={(text) =>
-                  setEditedTypeSpecs((prev) =>
-                    prev.map((s, i) => (i === index ? { ...s, key: text } : s)),
-                  )
-                }
-                placeholder="Key"
-                placeholderTextColor={colors.placeholder}
-                accessibilityLabel={`Type spec key ${index}`}
-                testID={`type-spec-key-${index}`}
-              />
-              <TextInput
-                style={[inputStyle, styles.typeSpecValueInput]}
-                value={spec.value}
-                onChangeText={(text) =>
-                  setEditedTypeSpecs((prev) =>
-                    prev.map((s, i) => (i === index ? { ...s, value: text } : s)),
-                  )
-                }
-                placeholder="Value"
-                placeholderTextColor={colors.placeholder}
-                accessibilityLabel={`Type spec value ${index}`}
-                testID={`type-spec-value-${index}`}
-              />
-            </View>
-          ))}
-          <TouchableOpacity
-            style={[styles.addSpecButton, { borderColor: colors.primary }]}
-            onPress={() => setEditedTypeSpecs((prev) => [...prev, { key: '', value: '' }])}
-            testID="add-spec-button"
-          >
-            <Text style={[styles.addSpecButtonText, { color: colors.primary }]}>+ Add Spec</Text>
-          </TouchableOpacity>
+          {aiLoading ? (
+            <ShimmerRows testID="ai-loading-type-specs" colors={colors} />
+          ) : (
+            <>
+              {editedTypeSpecs.map((spec, index) => {
+                const isAi = aiPopulatedFields.has(spec.key)
+                return (
+                  <View key={spec.id} style={styles.typeSpecRow}>
+                    <TextInput
+                      style={[inputStyle, styles.typeSpecKeyInput]}
+                      value={spec.key}
+                      onChangeText={(text) => {
+                        manuallyEditedFields.current.add(text)
+                        setAiPopulatedFields((prev) => {
+                          const next = new Set(prev)
+                          next.delete(spec.key)
+                          return next
+                        })
+                        setEditedTypeSpecs((prev) =>
+                          prev.map((s, i) => (i === index ? { ...s, key: text } : s)),
+                        )
+                      }}
+                      placeholder="Key"
+                      placeholderTextColor={colors.placeholder}
+                      accessibilityLabel={`Type spec key ${index}`}
+                      testID={`type-spec-key-${index}`}
+                    />
+                    <TextInput
+                      style={[
+                        inputStyle,
+                        styles.typeSpecValueInput,
+                        isAi ? { backgroundColor: colors.aiBg } : undefined,
+                      ]}
+                      value={spec.value}
+                      onChangeText={(text) => {
+                        manuallyEditedFields.current.add(spec.key)
+                        setAiPopulatedFields((prev) => {
+                          const next = new Set(prev)
+                          next.delete(spec.key)
+                          return next
+                        })
+                        setEditedTypeSpecs((prev) =>
+                          prev.map((s, i) => (i === index ? { ...s, value: text } : s)),
+                        )
+                      }}
+                      placeholder="Value"
+                      placeholderTextColor={colors.placeholder}
+                      accessibilityLabel={`Type spec value ${index}`}
+                      testID={`type-spec-value-${index}`}
+                    />
+                  </View>
+                )
+              })}
+              <TouchableOpacity
+                style={[styles.addSpecButton, { borderColor: colors.primary }]}
+                onPress={() => setEditedTypeSpecs((prev) => [...prev, { id: String(Date.now()) + String(Math.random()), key: '', value: '' }])}
+                testID="add-spec-button"
+              >
+                <Text style={[styles.addSpecButtonText, { color: colors.primary }]}>+ Add Spec</Text>
+              </TouchableOpacity>
+            </>
+          )}
         </View>
 
         {/* Section 4: Yard Metadata */}
@@ -434,11 +621,25 @@ const styles = StyleSheet.create({
     padding: 12,
     gap: 6,
   },
+  fieldLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   fieldLabel: {
     fontSize: 13,
     fontWeight: '600',
     marginTop: 8,
     marginBottom: 2,
+  },
+  aiBadge: {
+    borderRadius: 4,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+  },
+  aiBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
   },
   input: {
     borderWidth: 1,
@@ -489,6 +690,27 @@ const styles = StyleSheet.create({
   addSpecButtonText: {
     fontSize: 14,
     fontWeight: '600',
+  },
+  errorBanner: {
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  errorBannerText: {
+    flex: 1,
+    fontSize: 14,
+  },
+  errorBannerAction: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginLeft: 12,
+  },
+  shimmerRow: {
+    height: 16,
+    borderRadius: 4,
+    marginBottom: 12,
   },
   photoScroll: {
     marginTop: 4,

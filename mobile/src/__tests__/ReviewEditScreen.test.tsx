@@ -1,5 +1,5 @@
 import React from 'react'
-import { render, fireEvent, waitFor } from '@testing-library/react-native'
+import { render, fireEvent, waitFor, act } from '@testing-library/react-native'
 import { ReviewEditScreen } from '../screens/ReviewEditScreen'
 
 jest.mock('react-native/Libraries/Utilities/useColorScheme', () => ({
@@ -43,6 +43,8 @@ const defaultProps = {
   photos: basePhotos,
   taxonomyTree: [],
   onSubmit: jest.fn().mockResolvedValue(undefined),
+  aiLoading: false,
+  aiError: false,
 }
 
 // ── Test 1: Taxonomy fields pre-filled ────────────────────────────────────────
@@ -132,4 +134,138 @@ it('Add Spec button adds a new type-specific spec row', () => {
   fireEvent.press(getByTestId('add-spec-button'))
 
   expect(getByTestId('type-spec-key-2')).toBeTruthy()
+})
+
+// ── AI feature tests ──────────────────────────────────────────────────────────
+
+const nullCoreSpecs = {
+  make: null,
+  model: null,
+  year: null,
+  engineType: null,
+  transmission: null,
+  gvwLbs: null,
+  hoursOnMeter: null,
+}
+
+describe('AI loading state', () => {
+  it('shows shimmer for Core Specs when aiLoading is true', () => {
+    const { getByTestId } = render(<ReviewEditScreen {...defaultProps} aiLoading={true} />)
+    expect(getByTestId('ai-loading-core-specs')).toBeTruthy()
+  })
+
+  it('shows shimmer for Type-Specific Specs when aiLoading is true', () => {
+    const { getByTestId } = render(<ReviewEditScreen {...defaultProps} aiLoading={true} />)
+    expect(getByTestId('ai-loading-type-specs')).toBeTruthy()
+  })
+
+  it('does not show shimmer when aiLoading is false', () => {
+    const { queryByTestId } = render(<ReviewEditScreen {...defaultProps} aiLoading={false} />)
+    expect(queryByTestId('ai-loading-core-specs')).toBeNull()
+  })
+})
+
+describe('AI error state', () => {
+  it('shows error banner when aiError is true', () => {
+    const { getByTestId } = render(<ReviewEditScreen {...defaultProps} aiError={true} />)
+    expect(getByTestId('ai-error-banner')).toBeTruthy()
+  })
+
+  it('does not show error banner when aiError is false', () => {
+    const { queryByTestId } = render(<ReviewEditScreen {...defaultProps} aiError={false} />)
+    expect(queryByTestId('ai-error-banner')).toBeNull()
+  })
+
+  it('calls onRetryAnalysis when retry button is pressed', () => {
+    const onRetryAnalysis = jest.fn()
+    const { getByTestId } = render(
+      <ReviewEditScreen {...defaultProps} aiError={true} onRetryAnalysis={onRetryAnalysis} />,
+    )
+    fireEvent.press(getByTestId('ai-retry-button'))
+    expect(onRetryAnalysis).toHaveBeenCalledTimes(1)
+  })
+
+  it('hides banner when dismiss button is pressed', () => {
+    const { getByTestId, queryByTestId } = render(
+      <ReviewEditScreen {...defaultProps} aiError={true} />,
+    )
+    fireEvent.press(getByTestId('ai-dismiss-button'))
+    expect(queryByTestId('ai-error-banner')).toBeNull()
+  })
+})
+
+describe('AI field indicators', () => {
+  it('shows AI badge for fields with AI-populated coreSpecs', () => {
+    const { getByTestId, queryByTestId } = render(
+      <ReviewEditScreen
+        {...defaultProps}
+        coreSpecs={{ make: 'Caterpillar', model: null, year: null, engineType: null, transmission: null, gvwLbs: null, hoursOnMeter: null }}
+      />,
+    )
+    expect(getByTestId('ai-badge-make')).toBeTruthy()
+    expect(queryByTestId('ai-badge-model')).toBeNull()
+  })
+
+  it('removes AI badge when user edits a field', () => {
+    const { getByTestId, queryByTestId } = render(
+      <ReviewEditScreen
+        {...defaultProps}
+        coreSpecs={{ make: 'Caterpillar', model: null, year: null, engineType: null, transmission: null, gvwLbs: null, hoursOnMeter: null }}
+      />,
+    )
+    expect(getByTestId('ai-badge-make')).toBeTruthy()
+    fireEvent.changeText(getByTestId('spec-make'), 'John Deere')
+    expect(queryByTestId('ai-badge-make')).toBeNull()
+  })
+})
+
+const nullVinResult = {
+  make: null,
+  model: null,
+  year: null,
+  engineType: null,
+  transmission: null,
+  gvwLbs: null,
+  source: 'nhtsa' as const,
+}
+
+describe('async AI result reactivity', () => {
+  it('updates form fields when coreSpecs prop changes', async () => {
+    const { getByTestId, rerender } = render(
+      <ReviewEditScreen {...defaultProps} coreSpecs={nullCoreSpecs} vinResult={nullVinResult} />,
+    )
+    expect(getByTestId('spec-make').props.value).toBe('')
+
+    await act(async () => {
+      rerender(
+        <ReviewEditScreen
+          {...defaultProps}
+          coreSpecs={{ ...nullCoreSpecs, make: 'Caterpillar' }}
+          vinResult={nullVinResult}
+        />,
+      )
+    })
+
+    expect(getByTestId('spec-make').props.value).toBe('Caterpillar')
+  })
+
+  it('does not overwrite manually edited fields when coreSpecs arrives', async () => {
+    const { getByTestId, rerender } = render(
+      <ReviewEditScreen {...defaultProps} coreSpecs={nullCoreSpecs} vinResult={nullVinResult} />,
+    )
+
+    fireEvent.changeText(getByTestId('spec-make'), 'Komatsu')
+
+    await act(async () => {
+      rerender(
+        <ReviewEditScreen
+          {...defaultProps}
+          coreSpecs={{ ...nullCoreSpecs, make: 'Caterpillar' }}
+          vinResult={nullVinResult}
+        />,
+      )
+    })
+
+    expect(getByTestId('spec-make').props.value).toBe('Komatsu')
+  })
 })

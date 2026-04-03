@@ -42,6 +42,11 @@ export const colors = {
     inputText: '#000',
     inputBorder: '#999',
     inputBg: '#fff',
+
+    // AI-populated fields
+    aiBg: '#E8F4FD',
+    aiBadge: '#007AFF20',
+    aiBadgeText: '#007AFF',
   },
   dark: {
     // Text — all meet WCAG AA (4.5:1+) against #000
@@ -83,6 +88,11 @@ export const colors = {
     inputText: '#fff',
     inputBorder: '#555',
     inputBg: '#1c1c1e',
+
+    // AI-populated fields
+    aiBg: '#1a2a3a',
+    aiBadge: '#4da6ff30',
+    aiBadgeText: '#4da6ff',
   },
 } as const
 
