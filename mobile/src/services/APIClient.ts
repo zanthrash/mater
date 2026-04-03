@@ -114,7 +114,7 @@ export interface TaxonomyCategoryNode {
 export class APIClient {
   private readonly http: AxiosInstance
 
-  constructor(baseURL: string = 'http://192.168.1.15:3000') {
+  constructor(baseURL: string = 'http://192.168.1.23:3000') {
     this.http = axios.create({ baseURL })
   }
 

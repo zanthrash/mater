@@ -9,6 +9,7 @@ import {
   Image,
   ActivityIndicator,
 } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useThemeColors } from '../theme'
 import type { Asset } from '../services/APIClient'
 
@@ -73,10 +74,11 @@ function AssetCard({ item, onAssetPress }: AssetCardProps) {
 
 export function AssetListScreen({ assets, loading, onNewIntake, onAssetPress, onSearch }: Props) {
   const colors = useThemeColors()
+  const insets = useSafeAreaInsets()
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
         <Text style={[styles.appTitle, { color: colors.title }]}>Mater</Text>
         <TouchableOpacity
           testID="new-intake-button"
