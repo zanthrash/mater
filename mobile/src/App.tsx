@@ -206,6 +206,7 @@ function AppContent() {
       <OverviewScreen
         initialPhoto={overviewBase64}
         onPhotoChange={(photo) => setOverviewBase64(photo)}
+        onBack={goBack}
         onContinue={(base64) => {
           setOverviewBase64(base64)
           stateManager.saveStep('vin', { overviewBase64: base64 })

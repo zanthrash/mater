@@ -8,9 +8,10 @@ interface Props {
   initialPhoto?: string | null
   onPhotoChange?: (photo: string | null) => void
   onContinue: (overviewBase64: string) => void
+  onBack?: () => void
 }
 
-export function OverviewScreen({ initialPhoto, onPhotoChange, onContinue }: Props) {
+export function OverviewScreen({ initialPhoto, onPhotoChange, onContinue, onBack }: Props) {
   const colors = useThemeColors()
   const [photoBase64, setPhotoBase64] = useState<string | null>(initialPhoto ?? null)
   const [cameraOpen, setCameraOpen] = useState(false)
@@ -39,7 +40,7 @@ export function OverviewScreen({ initialPhoto, onPhotoChange, onContinue }: Prop
 
   return (
     <View style={[styles.outer, { backgroundColor: colors.background }]}>
-      <WizardHeader title="New Inspection" showMenu />
+      <WizardHeader title="New Inspection" showBack onBack={onBack} showMenu />
       <View style={styles.container}>
         <Text style={[styles.instruction, { color: colors.secondary }]}>
           Take an overview photo of the equipment to begin.
