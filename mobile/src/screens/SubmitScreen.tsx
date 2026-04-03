@@ -13,7 +13,7 @@ export function SubmitScreen({ assetId, assetSummary, onStartNew, onViewInList }
   const colors = useThemeColors()
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Text style={[styles.title, { color: colors.success }]}>Asset Ingested!</Text>
 
       <View style={[styles.idBox, { backgroundColor: colors.surface }]}>

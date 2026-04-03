@@ -34,7 +34,7 @@ export function ReviewScreen({ equipmentData, conditionData, photoCount, onSubmi
   }
 
   return (
-    <View style={styles.outerContainer}>
+    <View style={[styles.outerContainer, { backgroundColor: colors.background }]}>
       <WizardHeader title="Review & Submit" showBack onBack={onBack} showMenu onRestart={onRestart} />
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.section}>

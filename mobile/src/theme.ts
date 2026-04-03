@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { useColorScheme } from 'react-native'
+import { useThemeContext } from './ThemeContext'
 
 export const colors = {
   light: {
@@ -99,6 +99,6 @@ export const colors = {
 export type ThemeColors = typeof colors.light
 
 export function useThemeColors(): ThemeColors {
-  const scheme = useColorScheme()
-  return useMemo(() => (scheme === 'dark' ? colors.dark : colors.light), [scheme])
+  const { resolvedScheme } = useThemeContext()
+  return useMemo(() => (resolvedScheme === 'dark' ? colors.dark : colors.light), [resolvedScheme])
 }

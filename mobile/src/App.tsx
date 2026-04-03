@@ -8,6 +8,7 @@ import { VINEntryScreen } from './screens/VINEntryScreen'
 import { GuidedPhotosScreen } from './screens/GuidedPhotosScreen'
 import { ReviewEditScreen } from './screens/ReviewEditScreen'
 import { SubmitScreen } from './screens/SubmitScreen'
+import { ThemeProvider } from './ThemeContext'
 import { WizardStateManager } from './state/WizardStateManager'
 import type { AssetPhoto, IntakeDraft } from './state/WizardStateManager'
 import { APIClient } from './services/APIClient'
@@ -362,7 +363,9 @@ function AppContent() {
 export default function App() {
   return (
     <SafeAreaProvider>
-      <AppContent />
+      <ThemeProvider>
+        <AppContent />
+      </ThemeProvider>
     </SafeAreaProvider>
   )
 }

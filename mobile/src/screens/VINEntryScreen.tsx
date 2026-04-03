@@ -78,7 +78,7 @@ export function VINEntryScreen({ client = new APIClient(), onContinue, onBack, o
   }
 
   return (
-    <View style={styles.outerContainer}>
+    <View style={[styles.outerContainer, { backgroundColor: colors.background }]}>
       <WizardHeader title="VIN / Serial Number" showBack onBack={onBack} showMenu onRestart={onRestart} />
       <View style={styles.container}>
       <TextInput

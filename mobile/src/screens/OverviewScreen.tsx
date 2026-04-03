@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react'
 import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native'
 import { CameraViewfinder } from '../components/CameraViewfinder'
+import { WizardHeader } from '../components/WizardHeader'
 import { useThemeColors } from '../theme'
 
 interface Props {
@@ -37,78 +38,78 @@ export function OverviewScreen({ initialPhoto, onPhotoChange, onContinue }: Prop
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={[styles.title, { color: colors.title }]}>New Inspection</Text>
-      <Text style={[styles.instruction, { color: colors.secondary }]}>
-        Take an overview photo of the equipment to begin.
-      </Text>
-
-      {photoBase64 ? (
-        <View style={styles.thumbnailContainer}>
-          <TouchableOpacity
-            onPress={() => setCameraOpen(true)}
-            testID="overview-thumbnail"
-          >
-            <Image
-              source={{ uri: `data:image/jpeg;base64,${photoBase64}` }}
-              style={[styles.thumbnail, { backgroundColor: colors.surface }]}
-            />
-            <Text style={[styles.retakeHint, { color: colors.primary }]}>Tap to retake</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.deleteButton, { backgroundColor: colors.error }]}
-            onPress={handleDelete}
-            testID="delete-overview-photo"
-            accessibilityLabel="Delete overview photo"
-          >
-            <Text style={styles.deleteButtonText}>✕ Delete Photo</Text>
-          </TouchableOpacity>
-        </View>
-      ) : (
-        <TouchableOpacity
-          style={[styles.takePhotoButton, { backgroundColor: colors.primary }]}
-          onPress={() => setCameraOpen(true)}
-          testID="take-photo-button"
-        >
-          <Text style={styles.takePhotoButtonText}>Take Overview Photo</Text>
-        </TouchableOpacity>
-      )}
-
-      <TouchableOpacity
-        style={[
-          styles.continueButton,
-          { backgroundColor: photoBase64 ? colors.success : colors.buttonDisabledBg },
-        ]}
-        disabled={!photoBase64}
-        onPress={() => {
-          if (photoBase64) onContinue(photoBase64)
-        }}
-        testID="continue-button"
-      >
-        <Text
-          style={[
-            styles.continueButtonText,
-            !photoBase64 && { color: colors.buttonDisabledText },
-          ]}
-        >
-          Continue
+    <View style={[styles.outer, { backgroundColor: colors.background }]}>
+      <WizardHeader title="New Inspection" showMenu />
+      <View style={styles.container}>
+        <Text style={[styles.instruction, { color: colors.secondary }]}>
+          Take an overview photo of the equipment to begin.
         </Text>
-      </TouchableOpacity>
+
+        {photoBase64 ? (
+          <View style={styles.thumbnailContainer}>
+            <TouchableOpacity
+              onPress={() => setCameraOpen(true)}
+              testID="overview-thumbnail"
+            >
+              <Image
+                source={{ uri: `data:image/jpeg;base64,${photoBase64}` }}
+                style={[styles.thumbnail, { backgroundColor: colors.surface }]}
+              />
+              <Text style={[styles.retakeHint, { color: colors.primary }]}>Tap to retake</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.deleteButton, { backgroundColor: colors.error }]}
+              onPress={handleDelete}
+              testID="delete-overview-photo"
+              accessibilityLabel="Delete overview photo"
+            >
+              <Text style={styles.deleteButtonText}>✕ Delete Photo</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <TouchableOpacity
+            style={[styles.takePhotoButton, { backgroundColor: colors.primary }]}
+            onPress={() => setCameraOpen(true)}
+            testID="take-photo-button"
+          >
+            <Text style={styles.takePhotoButtonText}>Take Overview Photo</Text>
+          </TouchableOpacity>
+        )}
+
+        <TouchableOpacity
+          style={[
+            styles.continueButton,
+            { backgroundColor: photoBase64 ? colors.success : colors.buttonDisabledBg },
+          ]}
+          disabled={!photoBase64}
+          onPress={() => {
+            if (photoBase64) onContinue(photoBase64)
+          }}
+          testID="continue-button"
+        >
+          <Text
+            style={[
+              styles.continueButtonText,
+              !photoBase64 && { color: colors.buttonDisabledText },
+            ]}
+          >
+            Continue
+          </Text>
+        </TouchableOpacity>
+      </View>
     </View>
   )
 }
 
 const styles = StyleSheet.create({
+  outer: {
+    flex: 1,
+  },
   container: {
     flex: 1,
     padding: 24,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 8,
   },
   instruction: {
     fontSize: 16,

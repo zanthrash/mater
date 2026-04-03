@@ -40,7 +40,7 @@ function Row({ label, value }: { label: string; value: string | number | null | 
   const colors = useThemeColors()
   if (value == null) return null
   return (
-    <View style={styles.row}>
+    <View style={[styles.row, { borderBottomColor: colors.separator }]}>
       <Text style={[styles.rowLabel, { color: colors.label }]}>{label}</Text>
       <Text style={[styles.rowValue, { color: colors.value }]}>{String(value)}</Text>
     </View>

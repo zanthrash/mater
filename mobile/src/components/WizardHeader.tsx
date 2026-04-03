@@ -1,7 +1,10 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useThemeColors } from '../theme'
+import { useThemeContext } from '../ThemeContext'
+import { DropdownMenu } from './DropdownMenu'
+import type { MenuItem } from './DropdownMenu'
 
 interface Props {
   title: string
@@ -9,6 +12,7 @@ interface Props {
   onBack?: () => void
   showMenu?: boolean
   onRestart?: () => void
+  menuItems?: MenuItem[]
 }
 
 export function WizardHeader({
@@ -17,19 +21,52 @@ export function WizardHeader({
   onBack,
   showMenu = false,
   onRestart,
+  menuItems,
 }: Props) {
   const colors = useThemeColors()
+  const { mode, resolvedScheme, setMode } = useThemeContext()
   const insets = useSafeAreaInsets()
+  const [menuVisible, setMenuVisible] = useState(false)
+  const [menuAnchor, setMenuAnchor] = useState({ top: 60, right: 16 })
 
-  function handleMenuPress() {
-    Alert.alert(
-      'Restart Intake',
-      'Discard current progress and start over?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Yes, Restart', style: 'destructive', onPress: onRestart },
-      ]
-    )
+  const themeToggleItem: MenuItem = {
+    label: mode === 'system'
+      ? resolvedScheme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'
+      : resolvedScheme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode',
+    onPress: () => {
+      if (resolvedScheme === 'dark') {
+        setMode('light')
+      } else {
+        setMode('dark')
+      }
+    },
+  }
+
+  const restartItem: MenuItem | null = onRestart
+    ? {
+        label: 'Restart Intake',
+        destructive: true,
+        onPress: () => {
+          Alert.alert(
+            'Restart Intake',
+            'Discard current progress and start over?',
+            [
+              { text: 'Cancel', style: 'cancel' },
+              { text: 'Yes, Restart', style: 'destructive', onPress: onRestart },
+            ]
+          )
+        },
+      }
+    : null
+
+  const resolvedItems: MenuItem[] =
+    menuItems ??
+    [themeToggleItem, ...(restartItem ? [restartItem] : [])]
+
+  function handleMenuPress(event: any) {
+    const { pageY } = event.nativeEvent
+    setMenuAnchor({ top: pageY + 8, right: 16 })
+    setMenuVisible(true)
   }
 
   return (
@@ -68,6 +105,13 @@ export function WizardHeader({
           </TouchableOpacity>
         )}
       </View>
+
+      <DropdownMenu
+        visible={menuVisible}
+        onDismiss={() => setMenuVisible(false)}
+        items={resolvedItems}
+        anchorPosition={menuAnchor}
+      />
     </View>
   )
 }

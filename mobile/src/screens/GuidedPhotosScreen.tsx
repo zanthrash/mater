@@ -89,7 +89,7 @@ export function GuidedPhotosScreen({
   const extraPhotos = photos.filter(p => p.type === 'extra')
 
   return (
-    <View style={styles.outerContainer}>
+    <View style={[styles.outerContainer, { backgroundColor: colors.background }]}>
       <WizardHeader
         title="Capture Photos"
         showBack

@@ -329,7 +329,7 @@ export function ReviewEditScreen({
   ]
 
   return (
-    <View style={styles.outerContainer}>
+    <View style={[styles.outerContainer, { backgroundColor: colors.background }]}>
       <WizardHeader title="Review & Edit" showBack onBack={onBack} showMenu onRestart={onRestart} />
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
 
