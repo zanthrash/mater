@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Image } from 'react-native'
+import React, { useState, useRef, useEffect } from 'react'
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Image, Animated } from 'react-native'
 import { CameraViewfinder } from '../components/CameraViewfinder'
 import { WizardHeader } from '../components/WizardHeader'
 import { useThemeColors } from '../theme'
@@ -7,6 +7,7 @@ import type { AssetPhoto } from '../state/WizardStateManager'
 
 interface Props {
   photoChecklist: string[]
+  isChecklistLoading?: boolean
   photos: AssetPhoto[]
   onPhotosChange: (photos: AssetPhoto[]) => void
   onContinue: () => void
@@ -16,8 +17,18 @@ interface Props {
 
 const MIN_PHOTOS = 3
 
+function SkeletonRow({ colors }: { colors: ReturnType<typeof useThemeColors> }) {
+  return (
+    <View style={[styles.row, { borderBottomColor: colors.separator }]}>
+      <View style={[styles.skeletonText, { backgroundColor: colors.surface }]} />
+      <View style={[styles.skeletonButton, { backgroundColor: colors.surface }]} />
+    </View>
+  )
+}
+
 export function GuidedPhotosScreen({
   photoChecklist,
+  isChecklistLoading = false,
   photos,
   onPhotosChange,
   onContinue,
@@ -26,6 +37,20 @@ export function GuidedPhotosScreen({
 }: Props) {
   const colors = useThemeColors()
   const [cameraOpen, setCameraOpen] = useState(false)
+  const fadeAnim = useRef(new Animated.Value(isChecklistLoading ? 0 : 1)).current
+
+  const wasLoading = useRef(isChecklistLoading)
+  useEffect(() => {
+    if (wasLoading.current && !isChecklistLoading) {
+      fadeAnim.setValue(0)
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start()
+    }
+    wasLoading.current = isChecklistLoading
+  }, [isChecklistLoading])
   const [currentLabel, setCurrentLabel] = useState<string | null>(null)
   const [retakeLabel, setRetakeLabel] = useState<string | null>(null)
 
@@ -102,48 +127,54 @@ export function GuidedPhotosScreen({
           Capture each required photo. Tap to photograph.
         </Text>
 
-        {photoChecklist.map(item => {
-          const captured = photos.find(p => p.type === 'guided' && p.label === item)
-          if (captured) {
-            const imageUri = captured.uri || `data:image/jpeg;base64,${captured.base64}`
-            return (
-              <View key={item} style={[styles.row, { borderBottomColor: colors.separator }]}>
-                <Text style={[styles.itemLabel, { color: colors.label }]}>{item}</Text>
-                <Image
-                  source={{ uri: imageUri }}
-                  style={[styles.thumbnail, { backgroundColor: colors.surface }]}
-                  testID={`thumbnail-${item}`}
-                />
-                <TouchableOpacity
-                  style={[styles.actionButton, { backgroundColor: colors.primary }]}
-                  onPress={() => handleRetake(item)}
-                  testID={`retake-${item}`}
-                >
-                  <Text style={styles.actionButtonText}>Retake</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.actionButton, { backgroundColor: colors.error }]}
-                  onPress={() => handleDelete(item)}
-                  testID={`delete-${item}`}
-                >
-                  <Text style={styles.actionButtonText}>Delete</Text>
-                </TouchableOpacity>
-              </View>
-            )
-          }
-          return (
-            <View key={item} style={[styles.row, { borderBottomColor: colors.separator }]}>
-              <Text style={[styles.itemLabel, { color: colors.label }]}>{item}</Text>
-              <TouchableOpacity
-                style={[styles.actionButton, { backgroundColor: colors.primary }]}
-                onPress={() => handleCapturChecklist(item)}
-                testID={`capture-${item}`}
-              >
-                <Text style={styles.actionButtonText}>📷</Text>
-              </TouchableOpacity>
-            </View>
-          )
-        })}
+        {isChecklistLoading ? (
+          [0, 1, 2, 3, 4].map(i => <SkeletonRow key={i} colors={colors} />)
+        ) : (
+          <Animated.View style={{ opacity: fadeAnim }}>
+            {photoChecklist.map(item => {
+              const captured = photos.find(p => p.type === 'guided' && p.label === item)
+              if (captured) {
+                const imageUri = captured.uri || `data:image/jpeg;base64,${captured.base64}`
+                return (
+                  <View key={item} style={[styles.row, { borderBottomColor: colors.separator }]}>
+                    <Text style={[styles.itemLabel, { color: colors.label }]}>{item}</Text>
+                    <Image
+                      source={{ uri: imageUri }}
+                      style={[styles.thumbnail, { backgroundColor: colors.surface }]}
+                      testID={`thumbnail-${item}`}
+                    />
+                    <TouchableOpacity
+                      style={[styles.actionButton, { backgroundColor: colors.primary }]}
+                      onPress={() => handleRetake(item)}
+                      testID={`retake-${item}`}
+                    >
+                      <Text style={styles.actionButtonText}>Retake</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.actionButton, { backgroundColor: colors.error }]}
+                      onPress={() => handleDelete(item)}
+                      testID={`delete-${item}`}
+                    >
+                      <Text style={styles.actionButtonText}>Delete</Text>
+                    </TouchableOpacity>
+                  </View>
+                )
+              }
+              return (
+                <View key={item} style={[styles.row, { borderBottomColor: colors.separator }]}>
+                  <Text style={[styles.itemLabel, { color: colors.label }]}>{item}</Text>
+                  <TouchableOpacity
+                    style={[styles.actionButton, { backgroundColor: colors.primary }]}
+                    onPress={() => handleCapturChecklist(item)}
+                    testID={`capture-${item}`}
+                  >
+                    <Text style={styles.actionButtonText}>📷</Text>
+                  </TouchableOpacity>
+                </View>
+              )
+            })}
+          </Animated.View>
+        )}
 
         {extraPhotos.map((photo, index) => {
           const imageUri = photo.uri || `data:image/jpeg;base64,${photo.base64}`
@@ -230,6 +261,16 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 13,
     fontWeight: '600',
+  },
+  skeletonText: {
+    flex: 1,
+    height: 16,
+    borderRadius: 4,
+  },
+  skeletonButton: {
+    width: 44,
+    height: 32,
+    borderRadius: 6,
   },
   button: {
     paddingVertical: 14,

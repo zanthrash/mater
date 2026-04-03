@@ -32,6 +32,7 @@ function AppContent() {
   const [overviewBase64, setOverviewBase64] = useState<string | null>(null)
   const [vinData, setVinData] = useState<{ vin: string; result: VinResult | null } | null>(null)
   const [classificationResult, setClassificationResult] = useState<ClassificationResult | null>(null)
+  const [classificationLoading, setClassificationLoading] = useState(false)
   const [photos, setPhotos] = useState<AssetPhoto[]>([])
   const [aiSpecResult, setAiSpecResult] = useState<AnalysisResult | null>(null)
   const [aiAnalysisLoading, setAiAnalysisLoading] = useState(false)
@@ -106,6 +107,7 @@ function AppContent() {
     setOverviewBase64(null)
     setVinData(null)
     setClassificationResult(null)
+    setClassificationLoading(false)
     setPhotos([])
     setAiSpecResult(null)
     setAiAnalysisLoading(false)
@@ -155,12 +157,14 @@ function AppContent() {
     if (target === 'overview' || target === 'home') {
       setVinData(null)
       setClassificationResult(null)
+      setClassificationLoading(false)
       setPhotos([])
       setAiSpecResult(null)
       setAiAnalysisLoading(false)
       setAiAnalysisError(false)
     } else if (target === 'vin') {
       setClassificationResult(null)
+      setClassificationLoading(false)
       setPhotos([])
       setAiSpecResult(null)
       setAiAnalysisLoading(false)
@@ -211,6 +215,20 @@ function AppContent() {
           setOverviewBase64(base64)
           stateManager.saveStep('vin', { overviewBase64: base64 })
           navigate('vin')
+          // Fire classification early — gives API the full VIN entry duration to resolve
+          setClassificationLoading(true)
+          client
+            .classifyEquipment([{ base64 }])
+            .then((result) => {
+              setClassificationResult(result)
+              stateManager.saveStep('guided-photos', { classificationResult: result })
+            })
+            .catch(() => {
+              // silently fail — fallback checklist will be used
+            })
+            .finally(() => {
+              setClassificationLoading(false)
+            })
         }}
       />
     )
@@ -224,18 +242,19 @@ function AppContent() {
         onContinue={async (vin, vinResult) => {
           setVinData({ vin, result: vinResult })
           stateManager.saveStep('guided-photos', { vin, vinResult: vinResult ?? null })
-
-          // Navigate immediately, then fire classification in background
           navigate('guided-photos')
-          try {
-            const classifyPhotos = overviewBase64
-              ? [{ base64: overviewBase64 }]
-              : []
-            const result = await client.classifyEquipment(classifyPhotos, vin)
-            setClassificationResult(result)
-            stateManager.saveStep('guided-photos', { classificationResult: result })
-          } catch {
-            // Use fallback checklist — classificationResult stays null
+          // Re-classify with VIN for better accuracy only if VIN was provided
+          if (vin && vin.trim().length > 0 && overviewBase64) {
+            setClassificationLoading(true)
+            try {
+              const result = await client.classifyEquipment([{ base64: overviewBase64 }], vin)
+              setClassificationResult(result)
+              stateManager.saveStep('guided-photos', { classificationResult: result })
+            } catch {
+              // Keep whatever result we already have from the earlier call
+            } finally {
+              setClassificationLoading(false)
+            }
           }
         }}
       />
@@ -247,6 +266,7 @@ function AppContent() {
     return (
       <GuidedPhotosScreen
         photoChecklist={checklist}
+        isChecklistLoading={classificationLoading && !classificationResult}
         photos={photos}
         onPhotosChange={(updated) => {
           setPhotos(updated)
