@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import {
   View,
   Text,
@@ -7,23 +7,35 @@ import {
   Image,
   ActivityIndicator,
   Linking,
+  useWindowDimensions,
 } from 'react-native'
 import { CameraView, useCameraPermissions } from 'expo-camera'
+import * as ScreenOrientation from 'expo-screen-orientation'
 import { PhotoCaptureModule } from '../modules/PhotoCaptureModule'
 
 export interface CameraViewfinderProps {
   onCapture: (base64: string) => void
   onCancel: () => void
+  label?: string
 }
 
 type ViewState = 'requesting-permission' | 'no-permission' | 'camera' | 'preview'
 
-export function CameraViewfinder({ onCapture, onCancel }: CameraViewfinderProps) {
+export function CameraViewfinder({ onCapture, onCancel, label }: CameraViewfinderProps) {
+  const { width, height } = useWindowDimensions()
+  const isLandscape = width > height
   const [permission, requestPermission] = useCameraPermissions()
   const [flash, setFlash] = useState<'off' | 'on'>('off')
   const [capturedUri, setCapturedUri] = useState<string | null>(null)
   const [processing, setProcessing] = useState(false)
   const cameraRef = useRef<CameraView>(null)
+
+  useEffect(() => {
+    ScreenOrientation.unlockAsync()
+    return () => {
+      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP)
+    }
+  }, [])
 
   const getViewState = (): ViewState => {
     if (!permission) return 'requesting-permission'
@@ -104,6 +116,11 @@ export function CameraViewfinder({ onCapture, onCancel }: CameraViewfinderProps)
     return (
       <View style={styles.fullScreen} testID="preview">
         <Image source={{ uri: capturedUri }} style={styles.previewImage} />
+        {label && (
+          <View style={styles.labelPill}>
+            <Text style={styles.labelText}>{label}</Text>
+          </View>
+        )}
         {processing ? (
           <View style={styles.processingOverlay}>
             <ActivityIndicator size="large" color="#fff" />
@@ -131,6 +148,11 @@ export function CameraViewfinder({ onCapture, onCancel }: CameraViewfinderProps)
         facing="back"
         flash={flash}
       />
+      {label && (
+        <View style={styles.labelPill}>
+          <Text style={styles.labelText}>{label}</Text>
+        </View>
+      )}
       <View style={styles.topControls}>
         <TouchableOpacity style={styles.cancelButton} onPress={onCancel}>
           <Text style={styles.cancelButtonText}>Cancel</Text>
@@ -144,7 +166,7 @@ export function CameraViewfinder({ onCapture, onCancel }: CameraViewfinderProps)
           </Text>
         </TouchableOpacity>
       </View>
-      <View style={styles.bottomControls}>
+      <View style={isLandscape ? styles.bottomControlsLandscape : styles.bottomControls}>
         <TouchableOpacity style={styles.captureButton} onPress={handleCapture} testID="capture-button">
           <View style={styles.captureButtonInner} />
         </TouchableOpacity>
@@ -231,6 +253,13 @@ const styles = StyleSheet.create({
     right: 0,
     alignItems: 'center',
   },
+  bottomControlsLandscape: {
+    position: 'absolute',
+    right: 30,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+  },
   captureButton: {
     width: 72,
     height: 72,
@@ -285,5 +314,20 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     marginTop: 12,
+  },
+  labelPill: {
+    position: 'absolute',
+    top: 110,
+    alignSelf: 'center',
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    paddingVertical: 6,
+    paddingHorizontal: 18,
+    borderRadius: 20,
+    zIndex: 10,
+  },
+  labelText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 })

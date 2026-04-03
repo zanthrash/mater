@@ -107,7 +107,7 @@ export function GuidedPhotosScreen({
   }
 
   if (cameraOpen) {
-    return <CameraViewfinder onCapture={handleCapture} onCancel={handleCancelCamera} />
+    return <CameraViewfinder onCapture={handleCapture} onCancel={handleCancelCamera} label={currentLabel ?? undefined} />
   }
 
   const canContinue = photos.length >= MIN_PHOTOS
