@@ -1,40 +1,44 @@
 import React from 'react'
-import { View, Text, StyleSheet, TouchableOpacity, Linking, Alert } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
 import { useThemeColors } from '../theme'
 
 interface Props {
-  inspectionId: string
-  pdfUrl: string
+  assetId: string
+  assetSummary: { make: string | null; model: string | null; category: string | null; type: string | null }
   onStartNew: () => void
+  onViewInList: () => void
 }
 
-export function SubmitScreen({ inspectionId, pdfUrl, onStartNew }: Props) {
+export function SubmitScreen({ assetId, assetSummary, onStartNew, onViewInList }: Props) {
   const colors = useThemeColors()
-
-  function handleOpenPdf() {
-    Linking.openURL(pdfUrl).catch((err: Error) => {
-      Alert.alert('Could not open PDF', err.message)
-    })
-  }
 
   return (
     <View style={styles.container}>
-      <Text style={[styles.title, { color: colors.success }]}>Inspection Complete!</Text>
+      <Text style={[styles.title, { color: colors.success }]}>Asset Ingested!</Text>
 
       <View style={[styles.idBox, { backgroundColor: colors.surface }]}>
-        <Text style={[styles.idLabel, { color: colors.label }]}>Inspection ID</Text>
-        <Text style={[styles.idValue, { color: colors.value }]}>{inspectionId}</Text>
+        <Text style={[styles.idLabel, { color: colors.label }]}>Asset ID</Text>
+        <Text style={[styles.idValue, { color: colors.value }]}>{assetId}</Text>
       </View>
 
-      <TouchableOpacity style={[styles.pdfButton, { backgroundColor: colors.primary }]} onPress={handleOpenPdf}>
-        <Text style={styles.pdfButtonText}>Open PDF Report</Text>
+      <View style={[styles.summaryBox, { backgroundColor: colors.surface }]}>
+        <Text style={[styles.summaryText, { color: colors.value }]}>
+          {[assetSummary.make, assetSummary.model].filter(Boolean).join(' ') || 'Unknown Equipment'}
+        </Text>
+        <Text style={[styles.summarySubText, { color: colors.label }]}>
+          {[assetSummary.category, assetSummary.type].filter(Boolean).join(' > ')}
+        </Text>
+      </View>
+
+      <TouchableOpacity style={[styles.primaryButton, { backgroundColor: colors.primary }]} onPress={onViewInList}>
+        <Text style={styles.primaryButtonText}>View in List</Text>
       </TouchableOpacity>
 
       <TouchableOpacity
         style={[styles.newButton, { backgroundColor: colors.secondaryButtonBg, borderColor: colors.secondaryButtonBorder }]}
         onPress={onStartNew}
       >
-        <Text style={[styles.newButtonText, { color: colors.secondaryButtonText }]}>Start New Inspection</Text>
+        <Text style={[styles.newButtonText, { color: colors.secondaryButtonText }]}>Ingest Another</Text>
       </TouchableOpacity>
     </View>
   )
@@ -56,7 +60,7 @@ const styles = StyleSheet.create({
   idBox: {
     borderRadius: 8,
     padding: 16,
-    marginBottom: 32,
+    marginBottom: 16,
     width: '100%',
     alignItems: 'center',
   },
@@ -69,7 +73,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'monospace',
   },
-  pdfButton: {
+  summaryBox: {
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 32,
+    width: '100%',
+    alignItems: 'center',
+  },
+  summaryText: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  summarySubText: {
+    fontSize: 13,
+  },
+  primaryButton: {
     paddingVertical: 14,
     paddingHorizontal: 32,
     borderRadius: 8,
@@ -77,7 +96,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     width: '100%',
   },
-  pdfButtonText: {
+  primaryButtonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',

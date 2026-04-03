@@ -1,98 +1,115 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Alert } from 'react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
+import { AssetListScreen } from './screens/AssetListScreen'
+import { AssetDetailScreen } from './screens/AssetDetailScreen'
 import { OverviewScreen } from './screens/OverviewScreen'
 import { VINEntryScreen } from './screens/VINEntryScreen'
-import { DetailPhotosScreen } from './screens/DetailPhotosScreen'
-import { AIResultScreen } from './screens/AIResultScreen'
-import { ConflictResolutionView } from './screens/ConflictResolutionView'
-import { ConditionAssessmentScreen } from './screens/ConditionAssessmentScreen'
-import type { ConditionFormData } from './screens/ConditionAssessmentScreen'
-import { ReviewScreen } from './screens/ReviewScreen'
+import { GuidedPhotosScreen } from './screens/GuidedPhotosScreen'
+import { ReviewEditScreen } from './screens/ReviewEditScreen'
 import { SubmitScreen } from './screens/SubmitScreen'
 import { WizardStateManager } from './state/WizardStateManager'
+import type { AssetPhoto, IntakeDraft } from './state/WizardStateManager'
 import { APIClient } from './services/APIClient'
-import type { AnalyzeImagesResponse, VinResult } from './services/APIClient'
+import type { Asset, VinResult, ClassificationResult, AnalysisResult, TaxonomyCategoryNode } from './services/APIClient'
 import * as Location from 'expo-location'
 
-type Screen = 'overview' | 'vin' | 'photos' | 'result' | 'conflict' | 'condition' | 'review' | 'submit-success'
-
-const validScreens: Screen[] = ['overview', 'vin', 'photos', 'result', 'conflict', 'condition', 'review', 'submit-success']
+type Screen = 'home' | 'asset-detail' | 'overview' | 'vin' | 'guided-photos' | 'review' | 'submit-success'
 
 const stateManager = new WizardStateManager()
 const client = new APIClient()
 
 function AppContent() {
-  const [screen, setScreen] = useState<Screen>('overview')
-  const [analysisResult, setAnalysisResult] = useState<AnalyzeImagesResponse | null>(null)
-  const [overviewUri, setOverviewUri] = useState<string | null>(null)
+  const [screen, setScreen] = useState<Screen>('home')
+  const [assets, setAssets] = useState<Asset[]>([])
+  const [assetsLoading, setAssetsLoading] = useState(false)
+  const [taxonomyTree, setTaxonomyTree] = useState<TaxonomyCategoryNode[]>([])
+  const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null)
+  const [selectedAssetEvents, setSelectedAssetEvents] = useState<any[]>([])
+
+  // Intake wizard state
+  const [overviewBase64, setOverviewBase64] = useState<string | null>(null)
   const [vinData, setVinData] = useState<{ vin: string; result: VinResult | null } | null>(null)
-  const [resolvedData, setResolvedData] = useState<Record<string, string | number | null> | null>(null)
-  const [conditionData, setConditionData] = useState<ConditionFormData | null>(null)
-  const [submitResult, setSubmitResult] = useState<{ inspectionId: string; pdfUrl: string } | null>(null)
-  const [detailPhotos, setDetailPhotos] = useState<string[]>([])
+  const [classificationResult, setClassificationResult] = useState<ClassificationResult | null>(null)
+  const [photos, setPhotos] = useState<AssetPhoto[]>([])
+  const [aiSpecResult, setAiSpecResult] = useState<AnalysisResult | null>(null)
+  const [submitAsset, setSubmitAsset] = useState<Asset | null>(null)
   const [history, setHistory] = useState<Screen[]>([])
   const draftChecked = useRef(false)
-  const screenRef = useRef<Screen>('overview')
+  const screenRef = useRef<Screen>('home')
 
   screenRef.current = screen
 
   useEffect(() => {
+    loadAssets()
+    loadTaxonomy()
+    checkForDraft()
+  }, [])
+
+  async function loadAssets(search?: string) {
+    setAssetsLoading(true)
+    try {
+      const result = await client.listAssets(search ? { search } : undefined)
+      setAssets(result.data)
+    } catch {
+      // silently fail
+    } finally {
+      setAssetsLoading(false)
+    }
+  }
+
+  async function loadTaxonomy() {
+    try {
+      const tree = await client.getTaxonomy()
+      setTaxonomyTree(tree)
+    } catch {
+      // silently fail
+    }
+  }
+
+  function checkForDraft() {
     if (draftChecked.current) return
     draftChecked.current = true
-
     stateManager.loadDraft().then((draft) => {
       if (!draft) return
       Alert.alert(
-        'Resume?',
-        'You have an unfinished inspection. Would you like to resume?',
+        'Resume Intake?',
+        'You have an unfinished intake. Would you like to resume?',
         [
           {
             text: 'Resume',
             onPress: async () => {
               const latestDraft = await stateManager.loadDraft()
               if (latestDraft) {
-                const targetScreen = validScreens.includes(latestDraft.step as Screen)
-                  ? (latestDraft.step as Screen)
-                  : 'overview'
-                setScreen(targetScreen)
-                if (latestDraft.overviewUri) setOverviewUri(latestDraft.overviewUri)
-                if (latestDraft.vinResult !== undefined)
-                  setVinData(
-                    latestDraft.vin
-                      ? { vin: latestDraft.vin, result: latestDraft.vinResult ?? null }
-                      : null,
-                  )
-                if (latestDraft.aiResult !== undefined)
-                  setAnalysisResult(
-                    latestDraft.aiResult
-                      ? { storedPhotos: [], analysis: latestDraft.aiResult }
-                      : null,
-                  )
-                if (latestDraft.resolvedData) setResolvedData(latestDraft.resolvedData)
+                if (latestDraft.overviewBase64) setOverviewBase64(latestDraft.overviewBase64)
+                if (latestDraft.vin && latestDraft.vinResult !== undefined)
+                  setVinData({ vin: latestDraft.vin, result: latestDraft.vinResult ?? null })
+                if (latestDraft.classificationResult) setClassificationResult(latestDraft.classificationResult)
+                if (latestDraft.photos) setPhotos(latestDraft.photos)
+                if (latestDraft.aiSpecResult) setAiSpecResult(latestDraft.aiSpecResult)
+                const validSteps: Screen[] = ['home', 'asset-detail', 'overview', 'vin', 'guided-photos', 'review', 'submit-success']
+                const target = validSteps.includes(latestDraft.step as Screen) ? (latestDraft.step as Screen) : 'home'
+                setScreen(target)
               }
             },
           },
-          {
-            text: 'Start New',
-            style: 'cancel',
-          },
+          { text: 'Start New', style: 'cancel' },
         ],
       )
     })
-  }, [])
+  }
 
   function resetAll() {
-    setOverviewUri(null)
+    setOverviewBase64(null)
     setVinData(null)
-    setAnalysisResult(null)
-    setResolvedData(null)
-    setConditionData(null)
-    setSubmitResult(null)
-    setDetailPhotos([])
+    setClassificationResult(null)
+    setPhotos([])
+    setAiSpecResult(null)
+    setSubmitAsset(null)
     setHistory([])
-    setScreen('overview')
+    setScreen('home')
     stateManager.clearDraft()
+    loadAssets()
   }
 
   function navigate(s: Screen) {
@@ -103,33 +120,58 @@ function AppContent() {
   function goBack() {
     if (history.length === 0) return
     const target = history[history.length - 1]
-
-    if (['conflict', 'result', 'photos', 'vin', 'overview'].includes(target)) {
-      setConditionData(null)
-    }
-    if (['result', 'photos', 'vin', 'overview'].includes(target)) {
-      setResolvedData(null)
-    }
-    if (['photos', 'vin', 'overview'].includes(target)) {
-      setAnalysisResult(null)
-    }
-    if (target === 'overview') {
+    // Clear state when going back
+    if (target === 'overview' || target === 'home') {
       setVinData(null)
-      setOverviewUri(null)
+      setClassificationResult(null)
+      setPhotos([])
+      setAiSpecResult(null)
+    } else if (target === 'vin') {
+      setClassificationResult(null)
+      setPhotos([])
+      setAiSpecResult(null)
+    } else if (target === 'guided-photos') {
+      setAiSpecResult(null)
     }
-
     setHistory((prev) => prev.slice(0, -1))
     setScreen(target)
+  }
+
+  if (screen === 'home') {
+    return (
+      <AssetListScreen
+        assets={assets}
+        loading={assetsLoading}
+        onNewIntake={() => navigate('overview')}
+        onAssetPress={async (id) => {
+          const asset = assets.find((a) => a.id === id) ?? null
+          setSelectedAsset(asset)
+          setSelectedAssetEvents([])
+          navigate('asset-detail')
+        }}
+        onSearch={(query) => loadAssets(query)}
+      />
+    )
+  }
+
+  if (screen === 'asset-detail' && selectedAsset) {
+    return (
+      <AssetDetailScreen
+        asset={selectedAsset}
+        intakeEvents={selectedAssetEvents}
+        onBack={goBack}
+      />
+    )
   }
 
   if (screen === 'overview') {
     return (
       <OverviewScreen
-        initialPhoto={overviewUri}
-        onPhotoChange={(photo) => setOverviewUri(photo)}
-        onContinue={(uri) => {
-          setOverviewUri(uri)
-          stateManager.saveStep('vin', { overviewUri: uri })
+        initialPhoto={overviewBase64}
+        onPhotoChange={(photo) => setOverviewBase64(photo)}
+        onContinue={(base64) => {
+          setOverviewBase64(base64)
+          stateManager.saveStep('vin', { overviewBase64: base64 })
           navigate('vin')
         }}
       />
@@ -141,95 +183,75 @@ function AppContent() {
       <VINEntryScreen
         onBack={goBack}
         onRestart={resetAll}
-        onContinue={(vin, vinResult) => {
+        onContinue={async (vin, vinResult) => {
           setVinData({ vin, result: vinResult })
-          stateManager.saveStep('photos', {
-            vin,
-            vinResult: vinResult ?? null,
-          })
-          navigate('photos')
+          stateManager.saveStep('guided-photos', { vin, vinResult: vinResult ?? null })
+
+          // Navigate immediately, then fire classification in background
+          navigate('guided-photos')
+          try {
+            const classifyPhotos = overviewBase64
+              ? [{ base64: overviewBase64 }]
+              : []
+            const result = await client.classifyEquipment(classifyPhotos, vin)
+            setClassificationResult(result)
+            stateManager.saveStep('guided-photos', { classificationResult: result })
+          } catch {
+            // Use fallback checklist — classificationResult stays null
+          }
         }}
       />
     )
   }
 
-  if (screen === 'photos') {
+  if (screen === 'guided-photos') {
+    const checklist = classificationResult?.photoChecklist ?? ['Front', 'Rear', 'Left Side', 'Right Side', 'Interior', 'Engine', 'Serial Plate']
     return (
-      <DetailPhotosScreen
-        photos={detailPhotos}
-        onPhotosChange={setDetailPhotos}
-        onBack={goBack}
-        onRestart={resetAll}
-        onAnalysisComplete={(result) => {
-          setAnalysisResult(result)
-          stateManager.saveStep('result', {
-            aiResult: result.analysis,
-          })
-          navigate('result')
+      <GuidedPhotosScreen
+        photoChecklist={checklist}
+        photos={photos}
+        onPhotosChange={(updated) => {
+          setPhotos(updated)
+          stateManager.saveStep('guided-photos', { photos: updated })
         }}
-      />
-    )
-  }
-
-  if (screen === 'result') {
-    return (
-      <AIResultScreen
-        analysis={analysisResult?.analysis ?? null}
-        onBack={goBack}
-        onRestart={resetAll}
-        onNext={() => {
-          stateManager.saveStep('conflict', {
-            aiResult: analysisResult?.analysis ?? null,
-          })
-          navigate('conflict')
-        }}
-      />
-    )
-  }
-
-  if (screen === 'conflict') {
-    const aiResult = analysisResult?.analysis ?? null
-    const vinResult = vinData?.result ?? null
-    return (
-      <ConflictResolutionView
-        aiResult={aiResult}
-        vinResult={vinResult}
-        onBack={goBack}
-        onRestart={resetAll}
-        onResolved={(resolved) => {
-          setResolvedData(resolved)
-          navigate('condition')
-        }}
-      />
-    )
-  }
-
-  if (screen === 'condition') {
-    const conditionSummary = analysisResult?.analysis?.conditionSummary ?? null
-    return (
-      <ConditionAssessmentScreen
-        conditionSummary={conditionSummary}
-        initialData={conditionData}
-        onBack={goBack}
-        onRestart={resetAll}
-        onContinue={(data) => {
-          setConditionData(data)
+        onContinue={async () => {
           navigate('review')
+          try {
+            const taxonomy = classificationResult?.taxonomy
+              ? {
+                  category: classificationResult.taxonomy.category,
+                  type: classificationResult.taxonomy.type,
+                  subtype: classificationResult.taxonomy.subtype,
+                }
+              : null
+            const allPhotos = photos.map((p) => ({
+              base64: p.base64 ?? '',
+              type: p.type,
+              mediaType: 'image/jpeg' as const,
+            }))
+            const result = await client.analyzeImages({ photos: allPhotos, taxonomy })
+            setAiSpecResult(result)
+            stateManager.saveStep('review', { aiSpecResult: result })
+          } catch {
+            // proceed to review without AI specs
+          }
         }}
+        onBack={goBack}
+        onRestart={resetAll}
       />
     )
   }
 
   if (screen === 'review') {
-    const photoCount = detailPhotos.length
     return (
-      <ReviewScreen
-        equipmentData={resolvedData as Record<string, unknown> | null}
-        conditionData={conditionData}
-        photoCount={photoCount}
-        onBack={goBack}
-        onRestart={resetAll}
-        onSubmit={async (inspectorName) => {
+      <ReviewEditScreen
+        taxonomy={classificationResult?.taxonomy ?? { category: '', type: '', subtype: null }}
+        coreSpecs={aiSpecResult?.coreSpecs ?? { make: null, model: null, year: null, engineType: null, transmission: null, gvwLbs: null, hoursOnMeter: null }}
+        typeSpecificSpecs={aiSpecResult?.typeSpecificSpecs ?? {}}
+        vinResult={vinData?.result ?? null}
+        photos={photos}
+        taxonomyTree={taxonomyTree}
+        onSubmit={async (reviewData) => {
           let gpsLat: number | undefined
           let gpsLon: number | undefined
           try {
@@ -240,38 +262,53 @@ function AppContent() {
               gpsLon = location.coords.longitude
             }
           } catch {
-            // GPS optional — continue without it
+            // GPS optional
           }
 
-          try {
-            const result = await client.submitInspection({
-              inspectorName,
-              gpsLat,
-              gpsLon,
-              photos: [],
-              equipmentData: (resolvedData as Record<string, unknown>) ?? {},
-              conditionData: conditionData,
-              aiImageResult: (analysisResult?.analysis as Record<string, unknown> | null) ?? null,
-              vinLookupResult: (vinData?.result as Record<string, unknown> | null) ?? null,
-            })
-            await stateManager.clearDraft()
-            setSubmitResult(result)
-            navigate('submit-success')
-          } catch (error) {
-            const err = error as { message?: string }
-            Alert.alert('Submit failed', err.message ?? 'Unknown error')
-          }
+          const result = await client.createAsset({
+            vinSerial: vinData?.vin,
+            operatorName: undefined,
+            gpsLat,
+            gpsLon,
+            photos: photos.map((p) => ({
+              base64: p.base64 ?? '',
+              label: p.label,
+              type: p.type,
+              mediaType: 'image/jpeg',
+            })),
+            taxonomy: reviewData.taxonomy,
+            coreSpecs: reviewData.coreSpecs as Record<string, unknown>,
+            typeSpecificSpecs: reviewData.typeSpecificSpecs,
+            yardMetadata: reviewData.yardMetadata,
+            aiAnalysisResult: aiSpecResult as Record<string, unknown> | null ?? null,
+            vinLookupResult: vinData?.result as Record<string, unknown> | null ?? null,
+            aiTaxonomyResult: classificationResult as Record<string, unknown> | null ?? null,
+          })
+
+          await stateManager.clearDraft()
+          setSubmitAsset(result.asset)
+          navigate('submit-success')
         }}
+        onBack={goBack}
+        onRestart={resetAll}
       />
     )
   }
 
-  if (screen === 'submit-success' && submitResult) {
+  if (screen === 'submit-success' && submitAsset) {
     return (
       <SubmitScreen
-        inspectionId={submitResult.inspectionId}
-        pdfUrl={submitResult.pdfUrl}
+        assetId={submitAsset.id}
+        assetSummary={{
+          make: submitAsset.make,
+          model: submitAsset.model,
+          category: submitAsset.category,
+          type: submitAsset.type,
+        }}
         onStartNew={resetAll}
+        onViewInList={() => {
+          resetAll()
+        }}
       />
     )
   }
@@ -286,4 +323,3 @@ export default function App() {
     </SafeAreaProvider>
   )
 }
-

@@ -5,26 +5,6 @@ export interface ServiceError {
   source: 'claude' | 'nhtsa' | 'backend'
 }
 
-export interface AnalyzeImagesRequest {
-  inspectionId: string
-  photos: Array<{ base64: string; type: string; mediaType?: string }>
-}
-
-export interface AnalyzeImagesResponse {
-  storedPhotos: Array<{ url: string; type: string }>
-  analysis: {
-    make: string | null
-    model: string | null
-    year: number | null
-    engineType: string | null
-    transmission: string | null
-    gvwLbs: number | null
-    hoursOnMeter: number | null
-    conditionSummary: string | null
-    confidenceScore: number | null
-  }
-}
-
 export interface AnalyzeVinRequest {
   vin: string
 }
@@ -39,31 +19,96 @@ export interface VinResult {
   source: 'nhtsa' | 'claude'
 }
 
-export interface ConditionRating {
-  rating: 'Excellent' | 'Good' | 'Fair' | 'Poor' | 'Salvage'
-  notes: string
+export interface ClassificationResult {
+  taxonomy: {
+    category: string
+    type: string
+    subtype: string | null
+    confidence: number
+  }
+  photoChecklist: string[]
 }
 
-export interface SubmitInspectionRequest {
-  inspectorName: string
+export interface CoreSpecs {
+  make: string | null
+  model: string | null
+  year: number | null
+  engineType: string | null
+  transmission: string | null
+  gvwLbs: number | null
+  hoursOnMeter: number | null
+}
+
+export interface AnalysisResult {
+  coreSpecs: CoreSpecs
+  typeSpecificSpecs: Record<string, string | number | null>
+  confidenceScore: number
+}
+
+export interface Asset {
+  id: string
+  created_at: string
+  updated_at: string
+  vin_serial: string | null
+  category: string | null
+  type: string | null
+  subtype: string | null
+  make: string | null
+  model: string | null
+  year: number | null
+  engine_type: string | null
+  transmission: string | null
+  gvw_lbs: number | null
+  hours_on_meter: number | null
+  type_specific_specs: Record<string, string | number | null>
+  lot_number: string | null
+  yard_location: string | null
+  consignor: string | null
+  photos: Array<{ url: string; label: string; type: 'guided' | 'extra' }>
+  status: string
+}
+
+export interface IntakeEvent {
+  id: string
+  asset_id: string
+  created_at: string
+  operator_name: string | null
+  gps_lat: number | null
+  gps_lon: number | null
+  ai_analysis_result: Record<string, unknown> | null
+  vin_lookup_result: Record<string, unknown> | null
+  ai_taxonomy_result: Record<string, unknown> | null
+  source_photos: Array<{ url: string; label: string }> | null
+}
+
+export interface CreateAssetRequest {
+  vinSerial?: string
+  operatorName?: string
   gpsLat?: number
   gpsLon?: number
-  photos: Array<{ base64: string; type: string }>
-  equipmentData: Record<string, unknown>
-  conditionData: {
-    overall: 'Excellent' | 'Good' | 'Fair' | 'Poor' | 'Salvage'
-    engine: ConditionRating
-    hydraulics: ConditionRating
-    undercarriage: ConditionRating
-    cab: ConditionRating
-  }
-  aiImageResult?: Record<string, unknown> | null
+  photos: Array<{ base64: string; label: string; type: 'guided' | 'extra'; mediaType?: string }>
+  taxonomy?: { category: string; type: string; subtype?: string | null }
+  coreSpecs?: Record<string, unknown>
+  typeSpecificSpecs?: Record<string, string | number | null>
+  yardMetadata?: { lotNumber?: string; yardLocation?: string; consignor?: string }
+  aiAnalysisResult?: Record<string, unknown> | null
   vinLookupResult?: Record<string, unknown> | null
+  aiTaxonomyResult?: Record<string, unknown> | null
 }
 
-export interface SubmitInspectionResponse {
-  inspectionId: string
-  pdfUrl: string
+export interface AssetListResponse {
+  data: Asset[]
+  total: number
+}
+
+export interface TaxonomyTypeNode {
+  type: string
+  subtypes: string[]
+}
+
+export interface TaxonomyCategoryNode {
+  category: string
+  types: TaxonomyTypeNode[]
 }
 
 export class APIClient {
@@ -84,9 +129,9 @@ export class APIClient {
     }
   }
 
-  async analyzeImages(request: AnalyzeImagesRequest): Promise<AnalyzeImagesResponse> {
+  async analyzeImages(request: { photos: Array<{ base64: string; type: string; mediaType?: string }>; taxonomy?: { category: string; type: string; subtype?: string | null } | null }): Promise<AnalysisResult> {
     try {
-      const response = await this.http.post<AnalyzeImagesResponse>('/api/analyze/images', request)
+      const response = await this.http.post<AnalysisResult>('/api/analyze/images', request)
       return response.data
     } catch (error) {
       const err = error as import('axios').AxiosError
@@ -106,9 +151,53 @@ export class APIClient {
     }
   }
 
-  async submitInspection(request: SubmitInspectionRequest): Promise<SubmitInspectionResponse> {
+  async classifyEquipment(photos: Array<{ base64: string; mediaType?: string }>, vinSerial?: string | null): Promise<ClassificationResult> {
     try {
-      const response = await this.http.post<SubmitInspectionResponse>('/api/inspections', request)
+      const response = await this.http.post<ClassificationResult>('/api/analyze/classify', { photos, vinSerial })
+      return response.data
+    } catch (error) {
+      const err = error as import('axios').AxiosError
+      const message = (err.response?.data as { error?: string })?.error ?? err.message
+      throw { message, source: 'backend' as const } as ServiceError
+    }
+  }
+
+  async createAsset(request: CreateAssetRequest): Promise<{ asset: Asset }> {
+    try {
+      const response = await this.http.post<{ asset: Asset }>('/api/assets', request)
+      return response.data
+    } catch (error) {
+      const err = error as import('axios').AxiosError
+      const message = (err.response?.data as { error?: string })?.error ?? err.message
+      throw { message, source: 'backend' as const } as ServiceError
+    }
+  }
+
+  async getAsset(id: string): Promise<Asset> {
+    try {
+      const response = await this.http.get<Asset>(`/api/assets/${id}`)
+      return response.data
+    } catch (error) {
+      const err = error as import('axios').AxiosError
+      const message = (err.response?.data as { error?: string })?.error ?? err.message
+      throw { message, source: 'backend' as const } as ServiceError
+    }
+  }
+
+  async listAssets(params?: { category?: string; type?: string; make?: string; status?: string; search?: string; limit?: number; offset?: number }): Promise<AssetListResponse> {
+    try {
+      const response = await this.http.get<AssetListResponse>('/api/assets', { params })
+      return response.data
+    } catch (error) {
+      const err = error as import('axios').AxiosError
+      const message = (err.response?.data as { error?: string })?.error ?? err.message
+      throw { message, source: 'backend' as const } as ServiceError
+    }
+  }
+
+  async getTaxonomy(): Promise<TaxonomyCategoryNode[]> {
+    try {
+      const response = await this.http.get<TaxonomyCategoryNode[]>('/api/taxonomy')
       return response.data
     } catch (error) {
       const err = error as import('axios').AxiosError

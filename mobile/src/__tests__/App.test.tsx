@@ -13,17 +13,19 @@ jest.mock('expo-location', () => ({
   getCurrentPositionAsync: jest.fn(),
 }))
 
-it('renders the overview screen on startup', () => {
+jest.mock('axios', () => ({
+  create: jest.fn(() => ({
+    get: jest.fn().mockResolvedValue({ data: { data: [], total: 0 } }),
+    post: jest.fn().mockResolvedValue({ data: {} }),
+  })),
+}))
+
+it('renders the asset list home screen on startup', () => {
   const { getByText } = render(<App />)
-  expect(getByText('New Inspection')).toBeTruthy()
+  expect(getByText('Mater')).toBeTruthy()
 })
 
-it('does not show a back button on the overview screen', () => {
-  const { queryByTestId } = render(<App />)
-  expect(queryByTestId('header-back-button')).toBeNull()
-})
-
-it('has no menu button on the overview screen', () => {
-  const { queryByTestId } = render(<App />)
-  expect(queryByTestId('header-menu-button')).toBeNull()
+it('shows the new intake button on the home screen', () => {
+  const { getByTestId } = render(<App />)
+  expect(getByTestId('new-intake-button')).toBeTruthy()
 })

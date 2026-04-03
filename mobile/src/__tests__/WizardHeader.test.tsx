@@ -46,8 +46,8 @@ describe('WizardHeader', () => {
     )
     fireEvent.press(getByTestId('header-menu-button'))
     expect(alertSpy).toHaveBeenCalledWith(
-      'Restart Inspection',
-      'All progress will be lost. Are you sure?',
+      'Restart Intake',
+      'Discard current progress and start over?',
       expect.arrayContaining([
         expect.objectContaining({ text: 'Cancel' }),
         expect.objectContaining({ text: 'Yes, Restart', onPress: onRestart }),

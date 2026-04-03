@@ -23,8 +23,8 @@ export function WizardHeader({
 
   function handleMenuPress() {
     Alert.alert(
-      'Restart Inspection',
-      'All progress will be lost. Are you sure?',
+      'Restart Intake',
+      'Discard current progress and start over?',
       [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Yes, Restart', style: 'destructive', onPress: onRestart },
