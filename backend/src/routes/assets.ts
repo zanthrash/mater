@@ -29,9 +29,9 @@ interface PostBody {
   }
   typeSpecificSpecs?: Record<string, string | number | null>
   yardMetadata?: { lotNumber?: string; yardLocation?: string; consignor?: string }
-  aiAnalysisResult?: Record<string, unknown>
-  vinLookupResult?: Record<string, unknown>
-  aiTaxonomyResult?: Record<string, unknown>
+  aiAnalysisResult?: Record<string, unknown> | null
+  vinLookupResult?: Record<string, unknown> | null
+  aiTaxonomyResult?: Record<string, unknown> | null
 }
 
 interface IdParams {
@@ -91,9 +91,9 @@ export const assetsRoute: FastifyPluginAsync = async (fastify) => {
             coreSpecs: { type: 'object' },
             typeSpecificSpecs: { type: 'object' },
             yardMetadata: { type: 'object' },
-            aiAnalysisResult: { type: 'object' },
-            vinLookupResult: { type: 'object' },
-            aiTaxonomyResult: { type: 'object' },
+            aiAnalysisResult: { type: ['object', 'null'] },
+            vinLookupResult: { type: ['object', 'null'] },
+            aiTaxonomyResult: { type: ['object', 'null'] },
           },
         },
       },

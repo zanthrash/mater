@@ -124,7 +124,8 @@ export class APIClient {
       return response.data
     } catch (error) {
       const err = error as import('axios').AxiosError
-      const message = (err.response?.data as { error?: string })?.error ?? err.message
+      const data = err.response?.data as { message?: string; error?: string } | undefined
+      const message = data?.message ?? data?.error ?? err.message
       throw { message, source: 'backend' as const } as ServiceError
     }
   }
@@ -135,7 +136,8 @@ export class APIClient {
       return response.data
     } catch (error) {
       const err = error as import('axios').AxiosError
-      const message = (err.response?.data as { error?: string })?.error ?? err.message
+      const data = err.response?.data as { message?: string; error?: string } | undefined
+      const message = data?.message ?? data?.error ?? err.message
       throw { message, source: 'backend' as const } as ServiceError
     }
   }
@@ -146,7 +148,8 @@ export class APIClient {
       return response.data
     } catch (error) {
       const err = error as import('axios').AxiosError
-      const message = (err.response?.data as { error?: string })?.error ?? err.message
+      const data = err.response?.data as { message?: string; error?: string } | undefined
+      const message = data?.message ?? data?.error ?? err.message
       throw { message, source: 'backend' as const } as ServiceError
     }
   }
@@ -157,7 +160,8 @@ export class APIClient {
       return response.data
     } catch (error) {
       const err = error as import('axios').AxiosError
-      const message = (err.response?.data as { error?: string })?.error ?? err.message
+      const data = err.response?.data as { message?: string; error?: string } | undefined
+      const message = data?.message ?? data?.error ?? err.message
       throw { message, source: 'backend' as const } as ServiceError
     }
   }
@@ -168,7 +172,8 @@ export class APIClient {
       return response.data
     } catch (error) {
       const err = error as import('axios').AxiosError
-      const message = (err.response?.data as { error?: string })?.error ?? err.message
+      const data = err.response?.data as { message?: string; error?: string } | undefined
+      const message = data?.message ?? data?.error ?? err.message
       throw { message, source: 'backend' as const } as ServiceError
     }
   }
@@ -179,7 +184,8 @@ export class APIClient {
       return response.data
     } catch (error) {
       const err = error as import('axios').AxiosError
-      const message = (err.response?.data as { error?: string })?.error ?? err.message
+      const data = err.response?.data as { message?: string; error?: string } | undefined
+      const message = data?.message ?? data?.error ?? err.message
       throw { message, source: 'backend' as const } as ServiceError
     }
   }
@@ -190,7 +196,8 @@ export class APIClient {
       return response.data
     } catch (error) {
       const err = error as import('axios').AxiosError
-      const message = (err.response?.data as { error?: string })?.error ?? err.message
+      const data = err.response?.data as { message?: string; error?: string } | undefined
+      const message = data?.message ?? data?.error ?? err.message
       throw { message, source: 'backend' as const } as ServiceError
     }
   }
@@ -201,7 +208,8 @@ export class APIClient {
       return response.data
     } catch (error) {
       const err = error as import('axios').AxiosError
-      const message = (err.response?.data as { error?: string })?.error ?? err.message
+      const data = err.response?.data as { message?: string; error?: string } | undefined
+      const message = data?.message ?? data?.error ?? err.message
       throw { message, source: 'backend' as const } as ServiceError
     }
   }

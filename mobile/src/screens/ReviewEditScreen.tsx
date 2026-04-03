@@ -210,6 +210,7 @@ export function ReviewEditScreen({
   })
 
   const [submitting, setSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   const [showError, setShowError] = useState(aiError)
 
@@ -266,6 +267,7 @@ export function ReviewEditScreen({
 
   const handleSubmit = async () => {
     setSubmitting(true)
+    setSubmitError(null)
     try {
       const typeSpecsObj = editedTypeSpecs.reduce(
         (acc, { key, value }) => {
@@ -293,6 +295,9 @@ export function ReviewEditScreen({
         typeSpecificSpecs: typeSpecsObj,
         yardMetadata: editedYard,
       })
+    } catch (err) {
+      const msg = (err as { message?: string })?.message ?? 'Failed to save asset. Please try again.'
+      setSubmitError(msg)
     } finally {
       setSubmitting(false)
     }
@@ -575,6 +580,18 @@ export function ReviewEditScreen({
               ))}
             </ScrollView>
           </>
+        )}
+
+        {/* Save error banner */}
+        {submitError && (
+          <View
+            style={[styles.errorBanner, { backgroundColor: colors.errorBg }]}
+            testID="save-error-banner"
+          >
+            <Text style={[styles.errorBannerText, { color: colors.error }]}>
+              ⚠ Save failed — {submitError}
+            </Text>
+          </View>
         )}
 
         {/* Save Button */}
