@@ -1,6 +1,6 @@
 import React from 'react'
 import { View, Text, StyleSheet, ScrollView, Image } from 'react-native'
-import { useThemeColors } from '../theme'
+import { useThemeColors, typography } from '../theme'
 import type { Asset } from '../services/APIClient'
 import { WizardHeader } from '../components/WizardHeader'
 import { camelToTitle } from '../utils/formatting'
@@ -34,7 +34,11 @@ function formatDate(isoString: string): string {
 
 function SectionHeader({ title }: { title: string }) {
   const colors = useThemeColors()
-  return <Text style={[styles.sectionHeader, { color: colors.heading }]}>{title}</Text>
+  return (
+    <Text style={[styles.sectionHeader, { color: colors.primary, fontFamily: typography.headingFamily }]}>
+      {title.toUpperCase()}
+    </Text>
+  )
 }
 
 function Row({ label, value }: { label: string; value: string | number | null | undefined }) {
@@ -42,8 +46,27 @@ function Row({ label, value }: { label: string; value: string | number | null | 
   if (value == null) return null
   return (
     <View style={[styles.row, { borderBottomColor: colors.separator }]}>
-      <Text style={[styles.rowLabel, { color: colors.label }]}>{label}</Text>
-      <Text style={[styles.rowValue, { color: colors.value }]}>{String(value)}</Text>
+      <Text style={[styles.rowLabel, { color: colors.secondary, fontFamily: typography.bodyFamily }]}>
+        {label}
+      </Text>
+      <Text style={[styles.rowValue, { color: colors.textValue, fontFamily: typography.bodyFamily }]}>
+        {String(value)}
+      </Text>
+    </View>
+  )
+}
+
+function StackedRow({ label, value, groupBreak }: { label: string; value: string | number | null | undefined; groupBreak?: boolean }) {
+  const colors = useThemeColors()
+  if (value == null) return null
+  return (
+    <View style={[styles.stackedRow, groupBreak && styles.stackedRowGroupBreak]}>
+      <Text style={[styles.stackedLabel, { color: colors.secondary, fontFamily: typography.bodyFamily }]}>
+        {label.toUpperCase()}
+      </Text>
+      <Text style={[styles.stackedValue, { color: colors.textValue, fontFamily: typography.bodyFamily }]}>
+        {String(value)}
+      </Text>
     </View>
   )
 }
@@ -65,8 +88,11 @@ export function AssetDetailScreen({ asset, intakeEvents, onBack }: Props) {
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photoRow}>
               {asset.photos.map((photo, index) => (
                 <View key={index} style={styles.photoItem}>
-                  <Image source={{ uri: photo.url }} style={styles.photo} />
-                  <Text style={[styles.photoLabel, { color: colors.secondary }]}>
+                  <Image
+                    source={{ uri: photo.url }}
+                    style={[styles.photo, { borderColor: colors.border }]}
+                  />
+                  <Text style={[styles.photoLabel, { color: colors.secondary, fontFamily: typography.bodyFamily }]}>
                     {photo.label}
                   </Text>
                 </View>
@@ -76,7 +102,7 @@ export function AssetDetailScreen({ asset, intakeEvents, onBack }: Props) {
         )}
 
         {/* Taxonomy */}
-        <View style={styles.section}>
+        <View style={[styles.section, styles.sectionCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <SectionHeader title="Taxonomy" />
           <Row label="Category" value={asset.category} />
           <Row label="Type" value={asset.type} />
@@ -84,33 +110,35 @@ export function AssetDetailScreen({ asset, intakeEvents, onBack }: Props) {
         </View>
 
         {/* Core Specs */}
-        <View style={styles.section}>
+        <View style={[styles.section, styles.sectionCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <SectionHeader title="Core Specs" />
           <Row label="Make" value={asset.make} />
           <Row label="Model" value={asset.model} />
           <Row label="Year" value={asset.year} />
           <Row label="Engine" value={asset.engine_type} />
           <Row label="Transmission" value={asset.transmission} />
-          <Row
-            label="GVW"
-            value={asset.gvw_lbs != null ? `${asset.gvw_lbs} lbs` : null}
-          />
+          <Row label="GVW" value={asset.gvw_lbs != null ? `${asset.gvw_lbs} lbs` : null} />
           <Row label="Hours" value={asset.hours_on_meter} />
         </View>
 
         {/* Type-Specific Specs */}
         {typeSpecificKeys.length > 0 && (
-          <View style={styles.section}>
+          <View style={[styles.section, styles.sectionCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <SectionHeader title="Type-Specific Specs" />
-            {typeSpecificKeys.map((key) => (
-              <Row key={key} label={camelToTitle(key)} value={asset.type_specific_specs[key]} />
+            {typeSpecificKeys.map((key, index) => (
+              <StackedRow
+                key={key}
+                label={camelToTitle(key)}
+                value={asset.type_specific_specs[key]}
+                groupBreak={index > 0 && index % 4 === 0}
+              />
             ))}
           </View>
         )}
 
         {/* Yard Metadata */}
         {hasYardMetadata && (
-          <View style={styles.section}>
+          <View style={[styles.section, styles.sectionCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <SectionHeader title="Yard Metadata" />
             <Row label="Lot Number" value={asset.lot_number} />
             <Row label="Location" value={asset.yard_location} />
@@ -122,23 +150,23 @@ export function AssetDetailScreen({ asset, intakeEvents, onBack }: Props) {
         <View style={styles.section}>
           <SectionHeader title="Intake History" />
           {intakeEvents.length === 0 ? (
-            <Text style={[styles.emptyText, { color: colors.secondary }]}>
+            <Text style={[styles.emptyText, { color: colors.secondary, fontFamily: typography.bodyFamily }]}>
               No intake events recorded.
             </Text>
           ) : (
             intakeEvents.map((event) => (
               <View
                 key={event.id}
-                style={[styles.intakeCard, { backgroundColor: colors.surface }]}
+                style={[styles.intakeCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
               >
-                <Text style={[styles.intakeOperator, { color: colors.body }]}>
+                <Text style={[styles.intakeOperator, { color: colors.body, fontFamily: typography.headingFamily }]}>
                   {event.operator_name ?? 'Unknown Operator'}
                 </Text>
-                <Text style={[styles.intakeDate, { color: colors.secondary }]}>
+                <Text style={[styles.intakeDate, { color: colors.secondary, fontFamily: typography.bodyFamily }]}>
                   {formatDate(event.created_at)}
                 </Text>
                 {event.gps_lat != null && (
-                  <Text style={[styles.intakeGps, { color: colors.secondary }]}>
+                  <Text style={[styles.intakeGps, { color: colors.secondary, fontFamily: typography.bodyFamily }]}>
                     GPS: {event.gps_lat}, {event.gps_lon}
                   </Text>
                 )}
@@ -156,32 +184,38 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 32,
+    paddingBottom: 40,
+    paddingTop: 8,
   },
   section: {
     paddingHorizontal: 16,
     paddingTop: 16,
   },
+  sectionCard: {
+    marginHorizontal: 16,
+    marginTop: 12,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
   sectionHeader: {
-    fontSize: 14,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 8,
+    ...typography.label,
+    marginBottom: 10,
   },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 6,
+    paddingVertical: 8,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#e0e0e0',
   },
   rowLabel: {
-    fontSize: 14,
+    ...typography.body,
     flex: 1,
   },
   rowValue: {
-    fontSize: 14,
+    ...typography.body,
     flex: 2,
     textAlign: 'right',
   },
@@ -195,10 +229,11 @@ const styles = StyleSheet.create({
   photo: {
     width: 120,
     height: 90,
-    borderRadius: 6,
+    borderRadius: 8,
+    borderWidth: 1,
   },
   photoLabel: {
-    fontSize: 11,
+    ...typography.label,
     marginTop: 4,
     textAlign: 'center',
     maxWidth: 120,
@@ -207,21 +242,34 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     marginBottom: 10,
+    borderWidth: 1,
   },
   intakeOperator: {
-    fontSize: 15,
-    fontWeight: '600',
+    ...typography.heading,
     marginBottom: 2,
   },
   intakeDate: {
-    fontSize: 13,
+    ...typography.bodySmall,
     marginBottom: 2,
   },
   intakeGps: {
-    fontSize: 12,
+    ...typography.bodySmall,
   },
   emptyText: {
-    fontSize: 14,
+    ...typography.body,
     fontStyle: 'italic',
+  },
+  stackedRow: {
+    paddingVertical: 12,
+  },
+  stackedRowGroupBreak: {
+    marginTop: 16,
+  },
+  stackedLabel: {
+    ...typography.label,
+    marginBottom: 3,
+  },
+  stackedValue: {
+    ...typography.body,
   },
 })

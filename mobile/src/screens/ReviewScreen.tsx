@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   TextInput,
 } from 'react-native'
-import { useThemeColors } from '../theme'
+import { useThemeColors, typography } from '../theme'
 import type { ConditionFormData } from './ConditionAssessmentScreen'
 import { WizardHeader } from '../components/WizardHeader'
 
@@ -53,15 +53,15 @@ export function ReviewScreen({ equipmentData, conditionData, photoCount, onSubmi
         <Text style={[styles.sectionHeader, { color: colors.heading }]}>Equipment</Text>
         <View style={[styles.row, { borderBottomColor: colors.separator }]}>
           <Text style={[styles.label, { color: colors.label }]}>Make</Text>
-          <Text style={[styles.value, { color: colors.value }]}>{make}</Text>
+          <Text style={[styles.value, { color: colors.textValue }]}>{make}</Text>
         </View>
         <View style={[styles.row, { borderBottomColor: colors.separator }]}>
           <Text style={[styles.label, { color: colors.label }]}>Model</Text>
-          <Text style={[styles.value, { color: colors.value }]}>{model}</Text>
+          <Text style={[styles.value, { color: colors.textValue }]}>{model}</Text>
         </View>
         <View style={[styles.row, { borderBottomColor: colors.separator }]}>
           <Text style={[styles.label, { color: colors.label }]}>Year</Text>
-          <Text style={[styles.value, { color: colors.value }]}>{year}</Text>
+          <Text style={[styles.value, { color: colors.textValue }]}>{year}</Text>
         </View>
       </View>
 
@@ -69,7 +69,7 @@ export function ReviewScreen({ equipmentData, conditionData, photoCount, onSubmi
         <Text style={[styles.sectionHeader, { color: colors.heading }]}>Condition</Text>
         <View style={[styles.row, { borderBottomColor: colors.separator }]}>
           <Text style={[styles.label, { color: colors.label }]}>Overall Rating</Text>
-          <Text style={[styles.value, { color: colors.value }]}>{overall}</Text>
+          <Text style={[styles.value, { color: colors.textValue }]}>{overall}</Text>
         </View>
       </View>
 
@@ -77,7 +77,7 @@ export function ReviewScreen({ equipmentData, conditionData, photoCount, onSubmi
         <Text style={[styles.sectionHeader, { color: colors.heading }]}>Photos</Text>
         <View style={[styles.row, { borderBottomColor: colors.separator }]}>
           <Text style={[styles.label, { color: colors.label }]}>Photo Count</Text>
-          <Text style={[styles.value, { color: colors.value }]}>{photoCount}</Text>
+          <Text style={[styles.value, { color: colors.textValue }]}>{photoCount}</Text>
         </View>
       </View>
 
@@ -103,15 +103,14 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   sectionHeader: {
-    fontSize: 16,
-    fontWeight: '700',
+    ...typography.heading,
     marginBottom: 10,
   },
   input: {
     borderWidth: 1,
     borderRadius: 6,
     padding: 10,
-    fontSize: 14,
+    ...typography.body,
   },
   row: {
     flexDirection: 'row',
@@ -120,11 +119,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   label: {
-    fontSize: 14,
-    fontWeight: '600',
+    ...typography.body,
   },
   value: {
-    fontSize: 14,
+    ...typography.body,
   },
   submitButton: {
     marginTop: 8,
@@ -134,7 +132,6 @@ const styles = StyleSheet.create({
   },
   submitButtonText: {
     color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    ...typography.button,
   },
 })

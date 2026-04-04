@@ -202,6 +202,17 @@ export class APIClient {
     }
   }
 
+  async deleteAsset(id: string): Promise<void> {
+    try {
+      await this.http.put(`/api/assets/${id}`, { status: 'deleted' })
+    } catch (error) {
+      const err = error as import('axios').AxiosError
+      const data = err.response?.data as { message?: string; error?: string } | undefined
+      const message = data?.message ?? data?.error ?? err.message
+      throw { message, source: 'backend' as const } as ServiceError
+    }
+  }
+
   async getTaxonomy(): Promise<TaxonomyCategoryNode[]> {
     try {
       const response = await this.http.get<TaxonomyCategoryNode[]>('/api/taxonomy')

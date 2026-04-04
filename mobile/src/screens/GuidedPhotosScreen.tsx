@@ -1,8 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Image, Animated } from 'react-native'
+import { View, Text, StyleSheet, ScrollView, Image, Animated } from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { CameraViewfinder } from '../components/CameraViewfinder'
 import { WizardHeader } from '../components/WizardHeader'
-import { useThemeColors } from '../theme'
+import { PrimaryButton } from '../components/PrimaryButton'
+import { AnimatedPressableButton } from '../components/AnimatedPressable'
+import { useThemeColors, typography } from '../theme'
 import type { AssetPhoto } from '../state/WizardStateManager'
 
 interface Props {
@@ -17,12 +21,76 @@ interface Props {
 
 const MIN_PHOTOS = 3
 
-function SkeletonRow({ colors }: { colors: ReturnType<typeof useThemeColors> }) {
+// Keyword-based grouping for AI-generated checklists
+const CATEGORY_RULES: Array<{ label: string; keywords: string[] }> = [
+  {
+    label: 'Exterior Views',
+    keywords: ['side', 'front', 'rear', 'profile', 'view', 'exterior', 'blade', 'ripper', 'counterweight', 'tail', 'push arm'],
+  },
+  {
+    label: 'Interior & Mechanical',
+    keywords: ['cab', 'interior', 'engine', 'hood', 'compartment', 'seat', 'control', 'monitor', 'filter', 'fluid', 'exhaust'],
+  },
+  {
+    label: 'Detail & Documentation',
+    keywords: ['undercarriage', 'track', 'sprocket', 'idler', 'roller', 'serial', 'id', 'plate', 'vin', 'grade', 'sensor', 'mast', 'receiver', 'cutting edge', 'wear', 'close'],
+  },
+]
+
+function groupChecklist(items: string[]): Array<{ label: string; items: string[] }> {
+  const groups: Record<string, string[]> = {}
+  const ungrouped: string[] = []
+
+  for (const item of items) {
+    const lower = item.toLowerCase()
+    const match = CATEGORY_RULES.find(rule => rule.keywords.some(kw => lower.includes(kw)))
+    if (match) {
+      if (!groups[match.label]) groups[match.label] = []
+      groups[match.label].push(item)
+    } else {
+      ungrouped.push(item)
+    }
+  }
+
+  const result: Array<{ label: string; items: string[] }> = []
+  for (const rule of CATEGORY_RULES) {
+    if (groups[rule.label]?.length) {
+      result.push({ label: rule.label, items: groups[rule.label] })
+    }
+  }
+  if (ungrouped.length) {
+    result.push({ label: 'Other', items: ungrouped })
+  }
+
+  // Fall back to single flat group if grouping didn't work well
+  const groupedCount = result.reduce((sum, g) => sum + g.items.length, 0)
+  if (result.length <= 1 || groupedCount < items.length * 0.6) {
+    return [{ label: '', items }]
+  }
+  return result
+}
+
+function SkeletonRow() {
+  const colors = useThemeColors()
+  const shimmer = useRef(new Animated.Value(0.4)).current
+
+  useEffect(() => {
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(shimmer, { toValue: 1, duration: 600, useNativeDriver: true }),
+        Animated.timing(shimmer, { toValue: 0.4, duration: 600, useNativeDriver: true }),
+      ])
+    )
+    animation.start()
+    return () => animation.stop()
+  }, [])
+
   return (
-    <View style={[styles.row, { borderBottomColor: colors.separator }]}>
+    <Animated.View style={[styles.row, { borderBottomColor: colors.separator }, { opacity: shimmer }]}>
+      <View style={[styles.skeletonNumber, { backgroundColor: colors.border }]} />
       <View style={[styles.skeletonText, { backgroundColor: colors.surface }]} />
       <View style={[styles.skeletonButton, { backgroundColor: colors.surface }]} />
-    </View>
+    </Animated.View>
   )
 }
 
@@ -36,25 +104,12 @@ export function GuidedPhotosScreen({
   onRestart,
 }: Props) {
   const colors = useThemeColors()
+  const insets = useSafeAreaInsets()
   const [cameraOpen, setCameraOpen] = useState(false)
-  const fadeAnim = useRef(new Animated.Value(isChecklistLoading ? 0 : 1)).current
-
-  const wasLoading = useRef(isChecklistLoading)
-  useEffect(() => {
-    if (wasLoading.current && !isChecklistLoading) {
-      fadeAnim.setValue(0)
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }).start()
-    }
-    wasLoading.current = isChecklistLoading
-  }, [isChecklistLoading])
   const [currentLabel, setCurrentLabel] = useState<string | null>(null)
   const [retakeLabel, setRetakeLabel] = useState<string | null>(null)
 
-  const handleCapturChecklist = (label: string) => {
+  const handleCaptureChecklist = (label: string) => {
     setCurrentLabel(label)
     setRetakeLabel(null)
     setCameraOpen(true)
@@ -112,6 +167,12 @@ export function GuidedPhotosScreen({
 
   const canContinue = photos.length >= MIN_PHOTOS
   const extraPhotos = photos.filter(p => p.type === 'extra')
+  const guidedCaptured = photos.filter(p => p.type === 'guided').length
+  const total = photoChecklist.length
+  const groups = groupChecklist(photoChecklist)
+
+  // Running index across all checklist items for numbering
+  let globalIndex = 0
 
   return (
     <View style={[styles.outerContainer, { backgroundColor: colors.background }]}>
@@ -121,106 +182,178 @@ export function GuidedPhotosScreen({
         onBack={onBack}
         showMenu
         onRestart={onRestart}
+        stepInfo={{ current: 3, total: 5 }}
       />
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Text style={[styles.instruction, { color: colors.secondary }]}>
-          Capture each required photo. Tap to photograph.
-        </Text>
+
+      <ScrollView
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: 16 }]}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Header row: instruction + progress fraction */}
+        <View style={styles.instructionRow}>
+          <Text style={[styles.instruction, { color: colors.secondary, fontFamily: typography.bodyFamily }]}>
+            Capture each required photo.
+          </Text>
+          <View style={[styles.progressPill, { backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}>
+            <Text style={[styles.progressPillText, { color: guidedCaptured >= total ? colors.success : colors.primary, fontFamily: typography.bodyFamily }]}>
+              {guidedCaptured}/{total}
+            </Text>
+          </View>
+        </View>
 
         {isChecklistLoading ? (
-          [0, 1, 2, 3, 4].map(i => <SkeletonRow key={i} colors={colors} />)
+          <View style={[styles.checklistCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            {[0, 1, 2, 3, 4].map(i => <SkeletonRow key={i} />)}
+          </View>
         ) : (
-          <Animated.View style={{ opacity: fadeAnim }}>
-            {photoChecklist.map(item => {
-              const captured = photos.find(p => p.type === 'guided' && p.label === item)
-              if (captured) {
-                const imageUri = captured.uri || `data:image/jpeg;base64,${captured.base64}`
-                return (
-                  <View key={item} style={[styles.row, { borderBottomColor: colors.separator }]}>
-                    <Text style={[styles.itemLabel, { color: colors.label }]}>{item}</Text>
+          groups.map((group, groupIndex) => (
+            <View key={group.label || groupIndex} style={groupIndex > 0 ? { marginTop: 10 } : undefined}>
+              {group.label ? (
+                <Text style={[styles.sectionHeader, { color: colors.secondary, fontFamily: typography.bodyFamily }]}>
+                  {group.label.toUpperCase()}
+                </Text>
+              ) : null}
+              <View style={[styles.checklistCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                {group.items.map(item => {
+                  const itemNumber = ++globalIndex
+                  const captured = photos.find(p => p.type === 'guided' && p.label === item)
+
+                  if (captured) {
+                    const imageUri = captured.uri || `data:image/jpeg;base64,${captured.base64}`
+                    return (
+                      <View
+                        key={item}
+                        style={[
+                          styles.row,
+                          styles.capturedRow,
+                          { borderBottomColor: colors.separator, backgroundColor: colors.surfaceAlt, borderLeftColor: colors.success },
+                        ]}
+                      >
+                        <View style={[styles.numberCircle, { backgroundColor: colors.success }]}>
+                          <Ionicons name="checkmark" size={11} color="#fff" />
+                        </View>
+                        <Text style={[styles.itemLabel, styles.itemLabelCaptured, { color: colors.secondary, fontFamily: typography.bodyFamily }]}>
+                          {item}
+                        </Text>
+                        <View style={styles.thumbnailWrapper}>
+                          <Image
+                            source={{ uri: imageUri }}
+                            style={[styles.thumbnail, { backgroundColor: colors.surface }]}
+                            testID={`thumbnail-${item}`}
+                          />
+                        </View>
+                        <AnimatedPressableButton
+                          style={[styles.iconButton, { backgroundColor: colors.surface }]}
+                          onPress={() => handleRetake(item)}
+                          testID={`retake-${item}`}
+                        >
+                          <Ionicons name="camera-reverse-outline" size={18} color={colors.primary} />
+                        </AnimatedPressableButton>
+                        <AnimatedPressableButton
+                          style={[styles.iconButton, { backgroundColor: colors.errorBg }]}
+                          onPress={() => handleDelete(item)}
+                          testID={`delete-${item}`}
+                        >
+                          <Ionicons name="trash-outline" size={18} color={colors.error} />
+                        </AnimatedPressableButton>
+                      </View>
+                    )
+                  }
+
+                  return (
+                    <View key={item} style={[styles.row, { borderBottomColor: colors.separator }]}>
+                      <View style={[styles.numberCircle, { backgroundColor: colors.surfaceAlt, borderWidth: 1, borderColor: colors.border }]}>
+                        <Text style={[styles.numberText, { color: colors.secondary, fontFamily: typography.bodyFamily }]}>
+                          {itemNumber}
+                        </Text>
+                      </View>
+                      <Text style={[styles.itemLabel, { color: colors.label, fontFamily: typography.bodyFamily }]}>
+                        {item}
+                      </Text>
+                      <AnimatedPressableButton
+                        style={[styles.captureButton, { backgroundColor: colors.primary }]}
+                        onPress={() => handleCaptureChecklist(item)}
+                        testID={`capture-${item}`}
+                      >
+                        <Ionicons name="camera" size={16} color={colors.onPrimary} />
+                        <Text style={[styles.captureButtonText, { fontFamily: typography.bodyFamily }]}>
+                          Capture
+                        </Text>
+                      </AnimatedPressableButton>
+                    </View>
+                  )
+                })}
+              </View>
+            </View>
+          ))
+        )}
+
+        {/* Extra photos section */}
+        {extraPhotos.length > 0 && (
+          <View style={[styles.checklistCard, { backgroundColor: colors.surface, borderColor: colors.border, marginTop: 10 }]}>
+            {extraPhotos.map((photo, index) => {
+              const imageUri = photo.uri || `data:image/jpeg;base64,${photo.base64}`
+              return (
+                <View key={`extra-${index}`} style={[styles.row, { borderBottomColor: colors.separator }]}>
+                  <Text style={[styles.itemLabel, { color: colors.label, fontFamily: typography.bodyFamily }]}>
+                    Extra {index + 1}
+                  </Text>
+                  <View style={styles.thumbnailWrapper}>
                     <Image
                       source={{ uri: imageUri }}
                       style={[styles.thumbnail, { backgroundColor: colors.surface }]}
-                      testID={`thumbnail-${item}`}
+                      testID={`thumbnail-extra-${index}`}
                     />
-                    <TouchableOpacity
-                      style={[styles.actionButton, { backgroundColor: colors.primary }]}
-                      onPress={() => handleRetake(item)}
-                      testID={`retake-${item}`}
-                    >
-                      <Text style={styles.actionButtonText}>Retake</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.actionButton, { backgroundColor: colors.error }]}
-                      onPress={() => handleDelete(item)}
-                      testID={`delete-${item}`}
-                    >
-                      <Text style={styles.actionButtonText}>Delete</Text>
-                    </TouchableOpacity>
                   </View>
-                )
-              }
-              return (
-                <View key={item} style={[styles.row, { borderBottomColor: colors.separator }]}>
-                  <Text style={[styles.itemLabel, { color: colors.label }]}>{item}</Text>
-                  <TouchableOpacity
-                    style={[styles.actionButton, { backgroundColor: colors.primary }]}
-                    onPress={() => handleCapturChecklist(item)}
-                    testID={`capture-${item}`}
+                  <AnimatedPressableButton
+                    style={[styles.iconButton, { backgroundColor: colors.errorBg }]}
+                    onPress={() => handleDeleteExtra(index)}
+                    testID={`delete-extra-${index}`}
                   >
-                    <Text style={styles.actionButtonText}>📷</Text>
-                  </TouchableOpacity>
+                    <Ionicons name="trash-outline" size={18} color={colors.error} />
+                  </AnimatedPressableButton>
                 </View>
               )
             })}
-          </Animated.View>
+          </View>
         )}
 
-        {extraPhotos.map((photo, index) => {
-          const imageUri = photo.uri || `data:image/jpeg;base64,${photo.base64}`
-          return (
-            <View key={`extra-${index}`} style={[styles.row, { borderBottomColor: colors.separator }]}>
-              <Text style={[styles.itemLabel, { color: colors.label }]}>Extra {index + 1}</Text>
-              <Image
-                source={{ uri: imageUri }}
-                style={[styles.thumbnail, { backgroundColor: colors.surface }]}
-                testID={`thumbnail-extra-${index}`}
-              />
-              <TouchableOpacity
-                style={[styles.actionButton, { backgroundColor: colors.error }]}
-                onPress={() => handleDeleteExtra(index)}
-                testID={`delete-extra-${index}`}
-              >
-                <Text style={styles.actionButtonText}>Delete</Text>
-              </TouchableOpacity>
-            </View>
-          )
-        })}
-
-        <TouchableOpacity
-          style={[styles.button, { backgroundColor: colors.secondary }]}
+        <PrimaryButton
+          title="Add Extra Photo"
           onPress={handleAddExtra}
+          variant="secondary"
+          icon="add"
           testID="add-extra-button"
-        >
-          <Text style={styles.buttonText}>Add Extra Photo</Text>
-        </TouchableOpacity>
+          style={styles.addExtraButton}
+        />
+      </ScrollView>
 
-        <Text style={[styles.photoCount, { color: colors.label }]}>
-          {photos.length} photos captured
-        </Text>
-
-        <TouchableOpacity
-          style={[
-            styles.button,
-            { backgroundColor: canContinue ? colors.success : colors.buttonDisabledBg },
-          ]}
+      {/* Sticky footer: always-visible progress + Continue */}
+      <View
+        style={[
+          styles.stickyFooter,
+          {
+            backgroundColor: colors.background,
+            borderTopColor: colors.border,
+            paddingBottom: insets.bottom > 0 ? insets.bottom : 16,
+          },
+        ]}
+      >
+        <View style={[styles.countBadge, { backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}>
+          <Ionicons name="images-outline" size={14} color={colors.secondary} style={{ marginRight: 6 }} />
+          <Text style={[styles.countText, { color: colors.secondary, fontFamily: typography.bodyFamily }]}>
+            {photos.length} photo{photos.length !== 1 ? 's' : ''} captured
+            {!canContinue && ` · need ${MIN_PHOTOS - photos.length} more`}
+          </Text>
+        </View>
+        <PrimaryButton
+          title="Continue"
           onPress={onContinue}
           disabled={!canContinue}
+          icon="arrow-forward"
           testID="continue-button"
-        >
-          <Text style={styles.buttonText}>Continue</Text>
-        </TouchableOpacity>
-      </ScrollView>
+        />
+      </View>
     </View>
   )
 }
@@ -232,61 +365,127 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 16,
   },
+  instructionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
   instruction: {
-    fontSize: 16,
-    marginBottom: 20,
+    ...typography.body,
+    flex: 1,
+  },
+  progressPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+    borderWidth: 1,
+    marginLeft: 8,
+  },
+  progressPillText: {
+    ...typography.bodySmall,
+  },
+  sectionHeader: {
+    ...typography.label,
+    marginBottom: 6,
+    marginLeft: 2,
+  },
+  checklistCard: {
+    borderRadius: 12,
+    borderWidth: 1,
+    overflow: 'hidden',
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
     gap: 8,
   },
+  capturedRow: {
+    borderLeftWidth: 3,
+  },
+  numberCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  numberText: {
+    ...typography.label,
+  },
   itemLabel: {
     flex: 1,
-    fontSize: 15,
+    ...typography.body,
+  },
+  itemLabelCaptured: {
+    ...typography.bodySmall,
+  },
+  thumbnailWrapper: {
+    position: 'relative',
   },
   thumbnail: {
-    width: 60,
-    height: 60,
+    width: 48,
+    height: 48,
     borderRadius: 6,
   },
-  actionButton: {
-    paddingVertical: 6,
+  iconButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  captureButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 7,
     paddingHorizontal: 12,
-    borderRadius: 6,
+    borderRadius: 8,
+    gap: 4,
   },
-  actionButtonText: {
+  captureButtonText: {
     color: '#fff',
-    fontSize: 13,
-    fontWeight: '600',
+    ...typography.bodySmall,
+  },
+  skeletonNumber: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    flexShrink: 0,
   },
   skeletonText: {
     flex: 1,
-    height: 16,
+    height: 14,
     borderRadius: 4,
+    marginRight: 8,
   },
   skeletonButton: {
-    width: 44,
-    height: 32,
-    borderRadius: 6,
-  },
-  button: {
-    paddingVertical: 14,
-    paddingHorizontal: 24,
+    width: 76,
+    height: 34,
     borderRadius: 8,
+  },
+  addExtraButton: {
+    marginTop: 12,
+  },
+  stickyFooter: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    gap: 10,
+  },
+  countBadge: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
   },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  photoCount: {
-    fontSize: 14,
-    textAlign: 'center',
-    marginTop: 16,
+  countText: {
+    ...typography.bodySmall,
   },
 })

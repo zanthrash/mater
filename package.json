@@ -19,5 +19,8 @@
     "test:backend": "npm run test --workspace=backend",
     "test:mobile": "npm run test --workspace=mobile",
     "test": "npm run test:backend && npm run test:mobile"
+  },
+  "devDependencies": {
+    "@types/react": "~19.1.10"
   }
 }

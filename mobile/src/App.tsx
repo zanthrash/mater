@@ -1,6 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Alert } from 'react-native'
+import { StatusBar } from 'expo-status-bar'
+import * as SplashScreen from 'expo-splash-screen'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
+import { useAppFonts } from './fonts'
+import { useThemeContext } from './ThemeContext'
+
+SplashScreen.preventAutoHideAsync()
 import { AssetListScreen } from './screens/AssetListScreen'
 import { AssetDetailScreen } from './screens/AssetDetailScreen'
 import { OverviewScreen } from './screens/OverviewScreen'
@@ -191,6 +198,14 @@ function AppContent() {
           navigate('asset-detail')
         }}
         onSearch={(query) => loadAssets(query)}
+        onDeleteAsset={async (id) => {
+          setAssets((prev) => prev.filter((a) => a.id !== id))
+          try {
+            await client.deleteAsset(id)
+          } catch {
+            loadAssets()
+          }
+        }}
       />
     )
   }
@@ -273,9 +288,9 @@ function AppContent() {
           stateManager.saveStep('guided-photos', { photos: updated })
         }}
         onContinue={async () => {
-          navigate('review')
           setAiAnalysisLoading(true)
           setAiAnalysisError(false)
+          navigate('review')
           try {
             const taxonomy = classificationResult?.taxonomy
               ? {
@@ -381,12 +396,34 @@ function AppContent() {
   return null
 }
 
+function AppShell() {
+  const [fontsLoaded, fontError] = useAppFonts()
+  const { resolvedScheme } = useThemeContext()
+
+  useEffect(() => {
+    if (fontsLoaded || fontError) {
+      SplashScreen.hideAsync()
+    }
+  }, [fontsLoaded, fontError])
+
+  if (!fontsLoaded && !fontError) return null
+
+  return (
+    <>
+      <StatusBar style={resolvedScheme === 'dark' ? 'light' : 'dark'} />
+      <AppContent />
+    </>
+  )
+}
+
 export default function App() {
   return (
-    <SafeAreaProvider>
-      <ThemeProvider>
-        <AppContent />
-      </ThemeProvider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <ThemeProvider>
+          <AppShell />
+        </ThemeProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   )
 }

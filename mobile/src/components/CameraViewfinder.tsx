@@ -9,9 +9,14 @@ import {
   Linking,
   useWindowDimensions,
 } from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
 import { CameraView, useCameraPermissions } from 'expo-camera'
 import * as ScreenOrientation from 'expo-screen-orientation'
 import { PhotoCaptureModule } from '../modules/PhotoCaptureModule'
+import { typography } from '../theme'
+
+// Safety orange — used on dark camera backgrounds
+const ORANGE = '#EA580C'
 
 export interface CameraViewfinderProps {
   onCapture: (base64: string) => void
@@ -117,8 +122,8 @@ export function CameraViewfinder({ onCapture, onCancel, label }: CameraViewfinde
       <View style={styles.fullScreen} testID="preview">
         <Image source={{ uri: capturedUri }} style={styles.previewImage} />
         {label && (
-          <View style={styles.labelPill}>
-            <Text style={styles.labelText}>{label}</Text>
+          <View style={styles.labelBar}>
+            <Text style={styles.labelBarText}>{label}</Text>
           </View>
         )}
         {processing ? (
@@ -148,11 +153,6 @@ export function CameraViewfinder({ onCapture, onCancel, label }: CameraViewfinde
         facing="back"
         flash={flash}
       />
-      {label && (
-        <View style={styles.labelPill}>
-          <Text style={styles.labelText}>{label}</Text>
-        </View>
-      )}
       <View style={styles.topControls}>
         <TouchableOpacity style={styles.cancelButton} onPress={onCancel}>
           <Text style={styles.cancelButtonText}>Cancel</Text>
@@ -161,11 +161,18 @@ export function CameraViewfinder({ onCapture, onCancel, label }: CameraViewfinde
           style={styles.flashButton}
           onPress={() => setFlash(flash === 'off' ? 'on' : 'off')}
         >
-          <Text style={styles.flashButtonText}>
-            Flash: {flash === 'off' ? 'Off' : 'On'}
-          </Text>
+          <Ionicons
+            name={flash === 'off' ? 'flash-off' : 'flash'}
+            size={18}
+            color={flash === 'on' ? ORANGE : '#fff'}
+          />
         </TouchableOpacity>
       </View>
+      {label && (
+        <View style={styles.labelBar}>
+          <Text style={styles.labelBarText}>{label}</Text>
+        </View>
+      )}
       <View style={isLandscape ? styles.bottomControlsLandscape : styles.bottomControls}>
         <TouchableOpacity style={styles.captureButton} onPress={handleCapture} testID="capture-button">
           <View style={styles.captureButtonInner} />
@@ -191,14 +198,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    ...typography.title,
     color: '#fff',
     marginBottom: 12,
     textAlign: 'center',
   },
   permissionText: {
-    fontSize: 16,
+    ...typography.body,
     color: '#ccc',
     textAlign: 'center',
     marginTop: 16,
@@ -206,7 +212,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
   },
   settingsButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: ORANGE,
     paddingVertical: 12,
     paddingHorizontal: 32,
     borderRadius: 8,
@@ -214,8 +220,7 @@ const styles = StyleSheet.create({
   },
   settingsButtonText: {
     color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    ...typography.button,
   },
   cancelButton: {
     paddingVertical: 12,
@@ -223,8 +228,7 @@ const styles = StyleSheet.create({
   },
   cancelButtonText: {
     color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    ...typography.button,
   },
   topControls: {
     position: 'absolute',
@@ -243,8 +247,7 @@ const styles = StyleSheet.create({
   },
   flashButtonText: {
     color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
+    ...typography.bodySmall,
   },
   bottomControls: {
     position: 'absolute',
@@ -294,15 +297,14 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   usePhotoButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: ORANGE,
     paddingVertical: 14,
     paddingHorizontal: 32,
     borderRadius: 8,
   },
   controlButtonText: {
     color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    ...typography.button,
   },
   processingOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -312,22 +314,22 @@ const styles = StyleSheet.create({
   },
   processingText: {
     color: '#fff',
-    fontSize: 16,
+    ...typography.body,
     marginTop: 12,
   },
-  labelPill: {
+  labelBar: {
     position: 'absolute',
-    top: 110,
-    alignSelf: 'center',
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    paddingVertical: 6,
-    paddingHorizontal: 18,
-    borderRadius: 20,
+    top: 96,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    paddingVertical: 8,
+    paddingHorizontal: 20,
     zIndex: 10,
   },
-  labelText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+  labelBarText: {
+    color: 'rgba(255,255,255,0.9)',
+    ...typography.bodySmall,
+    textAlign: 'center',
   },
 })

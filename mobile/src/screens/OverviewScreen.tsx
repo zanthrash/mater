@@ -1,8 +1,11 @@
 import React, { useState, useCallback } from 'react'
-import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native'
+import { View, Text, Image, StyleSheet } from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
+import { AnimatedPressableButton } from '../components/AnimatedPressable'
+import { PrimaryButton } from '../components/PrimaryButton'
 import { CameraViewfinder } from '../components/CameraViewfinder'
 import { WizardHeader } from '../components/WizardHeader'
-import { useThemeColors } from '../theme'
+import { useThemeColors, typography } from '../theme'
 
 interface Props {
   initialPhoto?: string | null
@@ -29,74 +32,69 @@ export function OverviewScreen({ initialPhoto, onPhotoChange, onContinue, onBack
     setCameraOpen(false)
   }, [])
 
-  const handleDelete = useCallback(() => {
-    setPhotoBase64(null)
-    onPhotoChange?.(null)
-  }, [onPhotoChange])
-
   if (cameraOpen) {
     return <CameraViewfinder onCapture={handleCapture} onCancel={handleCancel} />
   }
 
   return (
     <View style={[styles.outer, { backgroundColor: colors.background }]}>
-      <WizardHeader title="New Inspection" showBack onBack={onBack} showMenu />
+      <WizardHeader
+        title="Overview Photo"
+        showBack
+        onBack={onBack}
+        showMenu
+        stepInfo={{ current: 1, total: 5 }}
+      />
       <View style={styles.container}>
-        <Text style={[styles.instruction, { color: colors.secondary }]}>
-          Take an overview photo of the equipment to begin.
+        <Text style={[styles.instruction, { color: colors.secondary, fontFamily: typography.bodyFamily }]}>
+          Take an overview photo of the equipment to begin the intake process.
         </Text>
 
         {photoBase64 ? (
           <View style={styles.thumbnailContainer}>
-            <TouchableOpacity
+            <AnimatedPressableButton
               onPress={() => setCameraOpen(true)}
               testID="overview-thumbnail"
             >
               <Image
                 source={{ uri: `data:image/jpeg;base64,${photoBase64}` }}
-                style={[styles.thumbnail, { backgroundColor: colors.surface }]}
+                style={[styles.thumbnail, { borderColor: colors.borderStrong }]}
               />
-              <Text style={[styles.retakeHint, { color: colors.primary }]}>Tap to retake</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.deleteButton, { backgroundColor: colors.error }]}
-              onPress={handleDelete}
-              testID="delete-overview-photo"
-              accessibilityLabel="Delete overview photo"
-            >
-              <Text style={styles.deleteButtonText}>✕ Delete Photo</Text>
-            </TouchableOpacity>
+              <View style={styles.retakeHintRow}>
+                <Ionicons name="camera-outline" size={14} color={colors.primary} />
+                <Text style={[styles.retakeHint, { color: colors.primary, fontFamily: typography.bodyFamily }]}>
+                  Tap to retake
+                </Text>
+              </View>
+            </AnimatedPressableButton>
           </View>
         ) : (
-          <TouchableOpacity
-            style={[styles.takePhotoButton, { backgroundColor: colors.primary }]}
-            onPress={() => setCameraOpen(true)}
-            testID="take-photo-button"
-          >
-            <Text style={styles.takePhotoButtonText}>Take Overview Photo</Text>
-          </TouchableOpacity>
+          <View style={[styles.emptyCapture, { borderColor: colors.border, backgroundColor: colors.surface }]}>
+            <Ionicons name="camera-outline" size={64} color={colors.placeholder} style={styles.cameraIcon} />
+            <Text style={[styles.emptyCaptureCopy, { color: colors.secondary, fontFamily: typography.bodyFamily }]}>
+              No photo yet
+            </Text>
+          </View>
         )}
 
-        <TouchableOpacity
-          style={[
-            styles.continueButton,
-            { backgroundColor: photoBase64 ? colors.success : colors.buttonDisabledBg },
-          ]}
+        {!photoBase64 && (
+          <PrimaryButton
+            title="Take Overview Photo"
+            onPress={() => setCameraOpen(true)}
+            icon="camera"
+            testID="take-photo-button"
+            style={styles.takePhotoButton}
+          />
+        )}
+
+        <PrimaryButton
+          title="Continue"
+          onPress={() => { if (photoBase64) onContinue(photoBase64) }}
           disabled={!photoBase64}
-          onPress={() => {
-            if (photoBase64) onContinue(photoBase64)
-          }}
+          icon="arrow-forward"
           testID="continue-button"
-        >
-          <Text
-            style={[
-              styles.continueButtonText,
-              !photoBase64 && { color: colors.buttonDisabledText },
-            ]}
-          >
-            Continue
-          </Text>
-        </TouchableOpacity>
+          style={styles.continueButton}
+        />
       </View>
     </View>
   )
@@ -109,58 +107,57 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 24,
-    justifyContent: 'center',
+    paddingTop: 32,
     alignItems: 'center',
   },
   instruction: {
-    fontSize: 16,
-    marginBottom: 24,
+    ...typography.body,
+    marginBottom: 32,
     textAlign: 'center',
   },
   thumbnailContainer: {
     alignItems: 'center',
     marginBottom: 24,
-    gap: 12,
+    gap: 16,
   },
   thumbnail: {
-    width: 200,
-    height: 200,
+    width: 220,
+    height: 220,
     borderRadius: 12,
+    borderWidth: 1,
+  },
+  retakeHintRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    marginTop: 10,
   },
   retakeHint: {
-    fontSize: 13,
-    marginTop: 8,
-    textAlign: 'center',
+    ...typography.bodySmall,
   },
-  deleteButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 6,
-  },
-  deleteButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  takePhotoButton: {
-    paddingVertical: 14,
-    paddingHorizontal: 32,
-    borderRadius: 8,
+  emptyCapture: {
+    width: 220,
+    height: 220,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 24,
   },
-  takePhotoButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+  cameraIcon: {
+    marginBottom: 8,
+  },
+  emptyCaptureCopy: {
+    ...typography.bodySmall,
+  },
+  takePhotoButton: {
+    alignSelf: 'stretch',
+    marginBottom: 12,
   },
   continueButton: {
-    paddingVertical: 14,
-    paddingHorizontal: 48,
-    borderRadius: 8,
-  },
-  continueButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    alignSelf: 'stretch',
+    marginTop: 'auto',
   },
 })

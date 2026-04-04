@@ -1,17 +1,43 @@
-import React from 'react'
+import React, { useState, useMemo } from 'react'
 import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
   FlatList,
   TextInput,
   Image,
   ActivityIndicator,
+  TouchableOpacity,
+  Alert,
+  ScrollView,
 } from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { useThemeColors } from '../theme'
+import { Swipeable } from 'react-native-gesture-handler'
+import { useThemeColors, typography } from '../theme'
+import { AnimatedPressableButton } from '../components/AnimatedPressable'
+import { PrimaryButton } from '../components/PrimaryButton'
 import type { Asset } from '../services/APIClient'
+
+type SortMode = 'newest' | 'oldest' | 'type'
+
+const SORT_OPTIONS: { key: SortMode; label: string }[] = [
+  { key: 'newest', label: 'Newest' },
+  { key: 'oldest', label: 'Oldest' },
+  { key: 'type', label: 'Type A–Z' },
+]
+
+const CATEGORY_ICONS: Record<string, string> = {
+  earthmoving: 'cog-outline',
+  agriculture: 'leaf-outline',
+  trucking: 'bus-outline',
+  construction: 'hammer-outline',
+}
+
+function getCategoryIcon(category: string | null): string {
+  if (!category) return 'construct-outline'
+  return CATEGORY_ICONS[category.toLowerCase()] ?? 'construct-outline'
+}
 
 interface Props {
   assets: Asset[]
@@ -19,6 +45,7 @@ interface Props {
   onNewIntake: () => void
   onAssetPress: (id: string) => void
   onSearch: (query: string) => void
+  onDeleteAsset: (id: string) => void
 }
 
 function formatDate(isoString: string): string {
@@ -32,102 +59,220 @@ function formatDate(isoString: string): string {
 interface AssetCardProps {
   item: Asset
   onAssetPress: (id: string) => void
+  onDeleteAsset: (id: string) => void
 }
 
-function AssetCard({ item, onAssetPress }: AssetCardProps) {
+function DeleteAction({ onPress }: { onPress: () => void }) {
   const colors = useThemeColors()
-  const title =
-    item.make || item.model || item.year
-      ? [item.make, item.model, item.year].filter(Boolean).join(' ')
-      : 'Unknown Equipment'
-  const taxonomy = [item.category, item.type].filter(Boolean).join(' > ')
-
   return (
     <TouchableOpacity
-      testID={`asset-card-${item.id}`}
-      style={[styles.card, { backgroundColor: colors.surface }]}
-      onPress={() => onAssetPress(item.id)}
+      onPress={onPress}
+      style={[styles.deleteAction, { backgroundColor: colors.error }]}
+      accessibilityLabel="Delete asset"
     >
-      {item.photos.length > 0 && (
-        <Image
-          source={{ uri: item.photos[0].url }}
-          style={styles.thumbnail}
-        />
-      )}
-      <View style={styles.cardBody}>
-        <Text style={[styles.cardTitle, { color: colors.heading }]}>{title}</Text>
-        {taxonomy ? (
-          <Text style={[styles.cardSecondary, { color: colors.secondary }]}>{taxonomy}</Text>
-        ) : null}
-        {item.lot_number ? (
-          <Text style={[styles.cardSecondary, { color: colors.secondary }]}>
-            Lot: {item.lot_number}
-          </Text>
-        ) : null}
-        <Text style={[styles.cardSecondary, { color: colors.secondary }]}>
-          {formatDate(item.created_at)}
-        </Text>
-      </View>
+      <Ionicons name="trash-outline" size={22} color="#fff" />
+      <Text style={styles.deleteActionLabel}>Delete</Text>
     </TouchableOpacity>
   )
 }
 
-export function AssetListScreen({ assets, loading, onNewIntake, onAssetPress, onSearch }: Props) {
+function AssetCard({ item, onAssetPress, onDeleteAsset }: AssetCardProps) {
+  const colors = useThemeColors()
+
+  const title =
+    item.make || item.model || item.year
+      ? [item.make, item.model, item.year].filter(Boolean).join(' ')
+      : 'Unknown Equipment'
+  const taxonomy = [item.category, item.type].filter(Boolean).join(' · ')
+
+  function handleDelete() {
+    Alert.alert(
+      'Delete Asset?',
+      `Remove "${title}" from the list?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => onDeleteAsset(item.id),
+        },
+      ]
+    )
+  }
+
+  return (
+    <Swipeable
+      friction={2}
+      rightThreshold={40}
+      renderRightActions={() => <DeleteAction onPress={handleDelete} />}
+    >
+      <AnimatedPressableButton
+        testID={`asset-card-${item.id}`}
+        style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}
+        onPress={() => onAssetPress(item.id)}
+        accessibilityLabel={`View details for ${title}`}
+      >
+        {item.photos.length > 0 ? (
+          <Image
+            source={{ uri: item.photos[0].url }}
+            style={[styles.cardPhoto, { backgroundColor: colors.surfaceAlt }]}
+            resizeMode="cover"
+          />
+        ) : (
+          <View style={[styles.cardPhoto, styles.cardPhotoPlaceholder, { backgroundColor: colors.surfaceAlt }]}>
+            <Ionicons
+              name={getCategoryIcon(item.category) as any}
+              size={40}
+              color={colors.placeholder}
+            />
+          </View>
+        )}
+        <View style={[styles.cardBody, { borderTopColor: colors.border }]}>
+          <Text
+            style={[styles.cardTitle, { color: colors.heading, fontFamily: typography.headingFamily }]}
+            numberOfLines={1}
+          >
+            {title}
+          </Text>
+          {taxonomy ? (
+            <Text style={[styles.cardTaxonomy, { color: colors.primary, fontFamily: typography.bodyFamily }]}>
+              {taxonomy.toUpperCase()}
+            </Text>
+          ) : null}
+          <View style={styles.cardFooter}>
+            {item.lot_number ? (
+              <Text style={[styles.cardMeta, { color: colors.secondary, fontFamily: typography.bodyFamily }]}>
+                Lot {item.lot_number}
+              </Text>
+            ) : null}
+            <Text style={[styles.cardMeta, { color: colors.secondary, fontFamily: typography.bodyFamily }]}>
+              {formatDate(item.created_at)}
+            </Text>
+          </View>
+        </View>
+      </AnimatedPressableButton>
+    </Swipeable>
+  )
+}
+
+export function AssetListScreen({ assets, loading, onNewIntake, onAssetPress, onSearch, onDeleteAsset }: Props) {
   const colors = useThemeColors()
   const insets = useSafeAreaInsets()
+  const [sortMode, setSortMode] = useState<SortMode>('newest')
+
+  const sortedAssets = useMemo(() => {
+    const copy = [...assets]
+    if (sortMode === 'oldest') {
+      copy.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+    } else if (sortMode === 'type') {
+      copy.sort((a, b) => {
+        const ta = [a.category, a.type].filter(Boolean).join(' ')
+        const tb = [b.category, b.type].filter(Boolean).join(' ')
+        return ta.localeCompare(tb)
+      })
+    }
+    return copy
+  }, [assets, sortMode])
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-        <Text style={[styles.appTitle, { color: colors.title }]}>Mater</Text>
-        <TouchableOpacity
+      <View style={[styles.header, { paddingTop: insets.top + 16, borderBottomColor: colors.borderStrong }]}>
+        <Text style={[styles.appTitle, { color: colors.title, fontFamily: typography.headingFamily }]}>
+          MATER
+        </Text>
+        <AnimatedPressableButton
           testID="new-intake-button"
           onPress={onNewIntake}
           style={[styles.addButton, { backgroundColor: colors.primary }]}
           accessibilityLabel="New intake"
         >
-          <Text style={styles.addButtonText}>+</Text>
-        </TouchableOpacity>
+          <Ionicons name="add" size={24} color={colors.onPrimary} />
+        </AnimatedPressableButton>
       </View>
 
-      <TextInput
-        testID="search-input"
-        style={[
-          styles.searchInput,
-          {
-            backgroundColor: colors.inputBg,
-            borderColor: colors.inputBorder,
-            color: colors.inputText,
-          },
-        ]}
-        placeholder="Search by make, model, VIN, lot..."
-        placeholderTextColor={colors.placeholder}
-        onChangeText={onSearch}
-      />
+      <View style={[styles.searchWrapper, { borderBottomColor: colors.border }]}>
+        <Ionicons name="search-outline" size={16} color={colors.placeholder} style={styles.searchIcon} />
+        <TextInput
+          testID="search-input"
+          style={[
+            styles.searchInput,
+            {
+              backgroundColor: 'transparent',
+              color: colors.inputText,
+              fontFamily: typography.bodyFamily,
+            },
+          ]}
+          placeholder="Search make, model, VIN, lot..."
+          placeholderTextColor={colors.placeholder}
+          onChangeText={onSearch}
+        />
+      </View>
+
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={[styles.sortBar, { borderBottomColor: colors.border }]}
+        contentContainerStyle={styles.sortBarContent}
+      >
+        {SORT_OPTIONS.map((opt) => {
+          const active = sortMode === opt.key
+          return (
+            <TouchableOpacity
+              key={opt.key}
+              onPress={() => setSortMode(opt.key)}
+              style={[
+                styles.sortChip,
+                {
+                  backgroundColor: active ? colors.primary : colors.surface,
+                  borderColor: active ? colors.primary : colors.border,
+                },
+              ]}
+              accessibilityRole="button"
+              accessibilityState={{ selected: active }}
+            >
+              <Text
+                style={[
+                  styles.sortChipText,
+                  {
+                    color: active ? colors.onPrimary : colors.secondary,
+                    fontFamily: typography.bodyFamily,
+                  },
+                ]}
+              >
+                {opt.label}
+              </Text>
+            </TouchableOpacity>
+          )
+        })}
+      </ScrollView>
 
       {loading ? (
         <ActivityIndicator testID="activity-indicator" style={styles.indicator} size="large" color={colors.primary} />
-      ) : assets.length === 0 ? (
+      ) : sortedAssets.length === 0 ? (
         <View style={styles.emptyState}>
-          <Text style={[styles.emptyText, { color: colors.secondary }]}>
-            No assets ingested yet
+          <Ionicons name="construct-outline" size={64} color={colors.placeholder} style={styles.emptyIcon} />
+          <Text style={[styles.emptyHeading, { color: colors.heading, fontFamily: typography.headingFamily }]}>
+            No Assets Yet
           </Text>
-          <TouchableOpacity
+          <Text style={[styles.emptyText, { color: colors.secondary, fontFamily: typography.bodyFamily }]}>
+            Start your first equipment intake to populate this list.
+          </Text>
+          <PrimaryButton
             testID="first-asset-button"
-            style={[styles.firstAssetButton, { backgroundColor: colors.primary }]}
+            title="Ingest First Asset"
             onPress={onNewIntake}
-          >
-            <Text style={styles.firstAssetButtonText}>Ingest Your First Asset</Text>
-          </TouchableOpacity>
+            icon="add"
+            style={styles.emptyButton}
+          />
         </View>
       ) : (
         <FlatList
-          data={assets}
+          data={sortedAssets}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
-            <AssetCard item={item} onAssetPress={onAssetPress} />
+            <AssetCard item={item} onAssetPress={onAssetPress} onDeleteAsset={onDeleteAsset} />
           )}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 24 }]}
         />
       )}
     </View>
@@ -142,32 +287,57 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
   },
   appTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
+    ...typography.display,
   },
   addButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  addButtonText: {
-    color: '#fff',
-    fontSize: 24,
-    lineHeight: 28,
+  searchWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 20,
+    marginTop: 12,
+    marginBottom: 0,
+    borderBottomWidth: 1,
+    paddingBottom: 10,
+  },
+  searchIcon: {
+    marginRight: 8,
   },
   searchInput: {
-    marginHorizontal: 16,
-    marginBottom: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
+    flex: 1,
+    ...typography.body,
+    paddingVertical: 0,
+  },
+  sortBar: {
+    flexGrow: 0,
+    flexShrink: 0,
+    borderBottomWidth: 1,
+  },
+  sortBarContent: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    gap: 8,
+    flexDirection: 'row',
+  },
+  sortChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 20,
     borderWidth: 1,
-    fontSize: 15,
+  },
+  sortChipText: {
+    fontSize: 13,
+    lineHeight: 18,
   },
   indicator: {
     marginTop: 48,
@@ -176,49 +346,72 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 24,
+    padding: 32,
   },
-  emptyText: {
-    fontSize: 16,
+  emptyIcon: {
     marginBottom: 16,
   },
-  firstAssetButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
+  emptyHeading: {
+    ...typography.title,
+    marginBottom: 8,
   },
-  firstAssetButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+  emptyText: {
+    ...typography.body,
+    textAlign: 'center',
+    marginBottom: 28,
+  },
+  emptyButton: {
+    paddingHorizontal: 32,
   },
   listContent: {
     paddingHorizontal: 16,
-    paddingBottom: 24,
+    paddingTop: 12,
   },
   card: {
-    flexDirection: 'row',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 10,
-    alignItems: 'flex-start',
+    borderRadius: 12,
+    marginBottom: 14,
+    overflow: 'hidden',
+    borderWidth: 1,
   },
-  thumbnail: {
-    width: 60,
-    height: 60,
-    borderRadius: 4,
+  cardPhoto: {
+    width: '100%',
+    aspectRatio: 16 / 9,
+  },
+  cardPhotoPlaceholder: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   cardBody: {
-    flex: 1,
-    marginLeft: 8,
+    padding: 12,
+    gap: 4,
+    borderTopWidth: 1,
   },
   cardTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    marginBottom: 2,
+    ...typography.heading,
   },
-  cardSecondary: {
-    fontSize: 13,
+  cardTaxonomy: {
+    ...typography.label,
+  },
+  cardFooter: {
+    flexDirection: 'row',
+    gap: 8,
     marginTop: 2,
+  },
+  cardMeta: {
+    ...typography.bodySmall,
+  },
+  deleteAction: {
+    width: 80,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
+    borderTopRightRadius: 12,
+    borderBottomRightRadius: 12,
+    gap: 4,
+  },
+  deleteActionLabel: {
+    color: '#fff',
+    ...typography.label,
+    letterSpacing: 0.5,
   },
 })

@@ -1,16 +1,17 @@
-import React, { useState, useCallback, useMemo } from 'react'
+import React, { useState, useCallback } from 'react'
 import {
   View,
   Text,
-  TextInput,
-  Button,
   ActivityIndicator,
   StyleSheet,
 } from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
 import { APIClient, VinResult } from '../services/APIClient'
 import { VINScannerScreen } from './VINScannerScreen'
 import { WizardHeader } from '../components/WizardHeader'
-import { useThemeColors } from '../theme'
+import { FormInput } from '../components/FormInput'
+import { PrimaryButton } from '../components/PrimaryButton'
+import { useThemeColors, typography } from '../theme'
 
 interface Props {
   client?: APIClient
@@ -26,19 +27,6 @@ export function VINEntryScreen({ client = new APIClient(), onContinue, onBack, o
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [scannerOpen, setScannerOpen] = useState(false)
-
-  const themed = useMemo(() => ({
-    title: { color: colors.title },
-    input: {
-      borderColor: colors.inputBorder,
-      color: colors.inputText,
-      backgroundColor: colors.inputBg,
-    },
-    errorBanner: { backgroundColor: colors.errorBg },
-    errorText: { color: colors.error },
-    resultContainer: { backgroundColor: colors.surfaceAlt },
-    resultRow: { color: colors.body },
-  }), [colors])
 
   const handleLookup = async () => {
     setLoading(true)
@@ -64,7 +52,7 @@ export function VINEntryScreen({ client = new APIClient(), onContinue, onBack, o
 
   const handleScannerCancel = useCallback(() => {
     setScannerOpen(false)
-    setError("Couldn't read VIN \u2014 please enter manually")
+    setError("Couldn't read VIN — please enter manually")
   }, [])
 
   if (scannerOpen) {
@@ -79,55 +67,86 @@ export function VINEntryScreen({ client = new APIClient(), onContinue, onBack, o
 
   return (
     <View style={[styles.outerContainer, { backgroundColor: colors.background }]}>
-      <WizardHeader title="VIN / Serial Number" showBack onBack={onBack} showMenu onRestart={onRestart} />
-      <View style={styles.container}>
-      <TextInput
-        style={[styles.input, themed.input]}
-        placeholder="Enter VIN"
-        placeholderTextColor={colors.placeholder}
-        value={vin}
-        onChangeText={setVin}
-        autoCapitalize="characters"
-        autoCorrect={false}
+      <WizardHeader
+        title="VIN / Serial"
+        showBack
+        onBack={onBack}
+        showMenu
+        onRestart={onRestart}
+        stepInfo={{ current: 2, total: 5 }}
       />
+      <View style={styles.container}>
+        <FormInput
+          label="VIN Number"
+          value={vin}
+          onChangeText={setVin}
+          placeholder="Enter VIN or serial number"
+          autoCapitalize="characters"
+          autoCorrect={false}
+        />
 
-      {error !== null && (
-        <View style={[styles.errorBanner, themed.errorBanner]}>
-          <Text style={[styles.errorText, themed.errorText]}>{error}</Text>
+        {error !== null && (
+          <View style={[styles.errorBanner, { backgroundColor: colors.errorBg }]}>
+            <Ionicons name="alert-circle-outline" size={16} color={colors.error} style={styles.errorIcon} />
+            <Text style={[styles.errorText, { color: colors.error, fontFamily: typography.bodyFamily }]}>
+              {error}
+            </Text>
+          </View>
+        )}
+
+        {loading && <ActivityIndicator style={styles.spinner} color={colors.primary} />}
+
+        {vinResult !== null && (
+          <View style={[styles.resultContainer, { backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}>
+            <Text style={[styles.resultHeading, { color: colors.primary, fontFamily: typography.headingFamily }]}>
+              VIN LOOKUP RESULT
+            </Text>
+            <ResultRow label="Make" value={vinResult.make ?? '—'} />
+            <ResultRow label="Model" value={vinResult.model ?? '—'} />
+            <ResultRow label="Year" value={vinResult.year !== null ? String(vinResult.year) : '—'} />
+            <ResultRow label="Source" value={vinResult.source === 'nhtsa' ? 'NHTSA' : 'AI'} />
+          </View>
+        )}
+
+        <View style={styles.actionRow}>
+          <PrimaryButton
+            title="Look Up VIN"
+            onPress={handleLookup}
+            disabled={loading || vin.length === 0}
+            icon="search"
+            style={styles.halfButton}
+          />
+          <PrimaryButton
+            title="Scan VIN"
+            onPress={() => setScannerOpen(true)}
+            disabled={loading}
+            variant="secondary"
+            icon="scan"
+            style={styles.halfButton}
+          />
         </View>
-      )}
 
-      {loading && <ActivityIndicator style={styles.spinner} />}
-
-      {vinResult !== null && (
-        <View style={[styles.resultContainer, themed.resultContainer]}>
-          <Text style={[styles.resultRow, themed.resultRow]}>Make: {vinResult.make ?? '\u2014'}</Text>
-          <Text style={[styles.resultRow, themed.resultRow]}>Model: {vinResult.model ?? '\u2014'}</Text>
-          <Text style={[styles.resultRow, themed.resultRow]}>
-            Year: {vinResult.year !== null ? String(vinResult.year) : '\u2014'}
-          </Text>
-          <Text style={[styles.resultRow, themed.resultRow]}>
-            Source: {vinResult.source === 'nhtsa' ? 'NHTSA' : 'AI'}
-          </Text>
-        </View>
-      )}
-
-      <View style={styles.buttonRow}>
-        <View style={styles.buttonHalf}>
-          <Button title="Look Up VIN" onPress={handleLookup} disabled={loading || vin.length === 0} />
-        </View>
-        <View style={styles.buttonHalf}>
-          <Button title="Scan VIN" onPress={() => setScannerOpen(true)} disabled={loading} />
-        </View>
-      </View>
-
-      <View style={styles.button}>
-        <Button
+        <PrimaryButton
           title="Continue"
           onPress={() => onContinue(vin, vinResult)}
+          icon="arrow-forward"
+          style={styles.continueButton}
         />
       </View>
-      </View>
+    </View>
+  )
+}
+
+function ResultRow({ label, value }: { label: string; value: string }) {
+  const colors = useThemeColors()
+  return (
+    <View style={[styles.resultRow, { borderBottomColor: colors.separator }]}>
+      <Text style={[styles.resultLabel, { color: colors.secondary, fontFamily: typography.bodyFamily }]}>
+        {label.toUpperCase()}
+      </Text>
+      <Text style={[styles.resultValue, { color: colors.textValue, fontFamily: typography.bodyFamily }]}>
+        {value}
+      </Text>
     </View>
   )
 }
@@ -141,47 +160,55 @@ const styles = StyleSheet.create({
     padding: 24,
     justifyContent: 'center',
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 16,
-  },
-  input: {
-    borderWidth: 1,
-    borderRadius: 6,
-    padding: 10,
-    fontSize: 16,
-    marginBottom: 12,
-  },
   errorBanner: {
-    borderRadius: 6,
-    padding: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 8,
+    padding: 12,
     marginBottom: 12,
+  },
+  errorIcon: {
+    marginRight: 8,
   },
   errorText: {
-    fontSize: 14,
+    ...typography.body,
+    flex: 1,
   },
   spinner: {
     marginBottom: 12,
   },
   resultContainer: {
-    borderRadius: 6,
-    padding: 12,
-    marginBottom: 16,
+    borderRadius: 10,
+    padding: 14,
+    marginBottom: 20,
+    borderWidth: 1,
+  },
+  resultHeading: {
+    ...typography.caption,
+    marginBottom: 10,
   },
   resultRow: {
-    fontSize: 15,
-    marginBottom: 4,
-  },
-  buttonRow: {
     flexDirection: 'row',
-    marginBottom: 12,
-    gap: 12,
+    justifyContent: 'space-between',
+    paddingVertical: 7,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  buttonHalf: {
+  resultLabel: {
+    ...typography.label,
+  },
+  resultValue: {
+    ...typography.body,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 12,
+  },
+  halfButton: {
     flex: 1,
+    paddingHorizontal: 8,
   },
-  button: {
-    marginBottom: 12,
+  continueButton: {
+    marginTop: 4,
   },
 })

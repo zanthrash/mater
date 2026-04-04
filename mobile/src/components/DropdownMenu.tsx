@@ -7,12 +7,14 @@ import {
   TouchableWithoutFeedback,
   StyleSheet,
 } from 'react-native'
-import { useThemeColors } from '../theme'
+import { Ionicons } from '@expo/vector-icons'
+import { useThemeColors, typography } from '../theme'
 
 export interface MenuItem {
   label: string
   onPress: () => void
   destructive?: boolean
+  icon?: string
 }
 
 interface Props {
@@ -35,7 +37,7 @@ export function DropdownMenu({ visible, onDismiss, items, anchorPosition }: Prop
                 styles.menu,
                 {
                   backgroundColor: colors.surface,
-                  borderColor: colors.border,
+                  borderColor: colors.borderStrong,
                   top: anchorPosition?.top ?? 60,
                   right: anchorPosition?.right ?? 16,
                 },
@@ -51,10 +53,18 @@ export function DropdownMenu({ visible, onDismiss, items, anchorPosition }: Prop
                       item.onPress()
                     }}
                   >
+                    {item.icon && (
+                      <Ionicons
+                        name={item.icon as any}
+                        size={16}
+                        color={item.destructive ? colors.error : colors.secondary}
+                        style={styles.itemIcon}
+                      />
+                    )}
                     <Text
                       style={[
                         styles.itemText,
-                        { color: item.destructive ? colors.error : colors.body },
+                        { color: item.destructive ? colors.error : colors.body, fontFamily: typography.bodyFamily },
                       ]}
                     >
                       {item.label}
@@ -76,22 +86,27 @@ const styles = StyleSheet.create({
   },
   menu: {
     position: 'absolute',
-    minWidth: 180,
-    borderRadius: 10,
-    borderWidth: StyleSheet.hairlineWidth,
+    minWidth: 200,
+    borderRadius: 12,
+    borderWidth: 1,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 12,
     overflow: 'hidden',
   },
   item: {
     paddingVertical: 13,
     paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  itemIcon: {
+    marginRight: 10,
   },
   itemText: {
-    fontSize: 16,
+    ...typography.body,
   },
   separator: {
     height: StyleSheet.hairlineWidth,

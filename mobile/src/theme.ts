@@ -3,98 +3,126 @@ import { useThemeContext } from './ThemeContext'
 
 export const colors = {
   light: {
-    // Text — all meet WCAG AA (4.5:1+) against #fff
-    title: '#000',           // 21:1
-    heading: '#1a1a1a',      // 17.4:1
-    label: '#333',           // 12.6:1
-    value: '#000',           // 21:1
-    body: '#222',            // 15.4:1
-    secondary: '#555',       // 7.5:1
-    placeholder: '#666',     // 5.7:1
+    // Text
+    title: '#0F172A',
+    heading: '#1E293B',
+    label: '#334155',
+    textValue: '#0F172A',
+    body: '#334155',
+    secondary: '#475569',
+    placeholder: '#94A3B8',
 
     // Surfaces
-    background: '#fff',
-    surface: '#f5f5f5',
-    surfaceAlt: '#eaf4ff',
+    background: '#F8FAFC',
+    surface: '#FFFFFF',
+    surfaceAlt: '#FFF7ED',
 
     // Borders
-    border: '#ccc',
-    borderLight: '#ddd',
-    separator: '#ddd',
+    border: '#E2E8F0',
+    borderLight: '#F1F5F9',
+    borderStrong: '#CBD5E1',
+    separator: '#E2E8F0',
 
     // Interactive
-    primary: '#007AFF',
-    success: '#28a745',
-    error: '#c00',
-    errorBg: '#fdd',
-    warning: '#856404',
-    warningBg: '#FFF3CD',
-    checkmark: '#28a745',
+    primary: '#EA580C',
+    primaryHover: '#C2410C',
+    onPrimary: '#FFFFFF',
+    success: '#16A34A',
+    error: '#DC2626',
+    errorBg: '#FEF2F2',
+    warning: '#D97706',
+    warningBg: '#FFFBEB',
+    checkmark: '#16A34A',
 
     // Buttons
-    buttonDisabledBg: '#ccc',
-    buttonDisabledText: '#666',
-    secondaryButtonBg: '#f5f5f5',
-    secondaryButtonText: '#333',
-    secondaryButtonBorder: '#ccc',
+    buttonDisabledBg: '#E2E8F0',
+    buttonDisabledText: '#94A3B8',
+    secondaryButtonBg: '#FFFFFF',
+    secondaryButtonText: '#334155',
+    secondaryButtonBorder: '#CBD5E1',
 
     // Input
-    inputText: '#000',
-    inputBorder: '#999',
-    inputBg: '#fff',
+    inputText: '#0F172A',
+    inputBorder: '#CBD5E1',
+    inputBg: '#FFFFFF',
 
     // AI-populated fields
-    aiBg: '#E8F4FD',
-    aiBadge: '#007AFF20',
-    aiBadgeText: '#007AFF',
+    aiBg: '#EFF6FF',
+    aiBadge: 'rgba(59,130,246,0.10)',
+    aiBadgeText: '#2563EB',
+    aiAccent: '#3B82F6',
+    aiBadgeBg: 'rgba(59,130,246,0.10)',
   },
   dark: {
-    // Text — all meet WCAG AA (4.5:1+) against #000
-    title: '#fff',           // 21:1
-    heading: '#f0f0f0',      // 18.1:1
-    label: '#ccc',           // 13.3:1
-    value: '#fff',           // 21:1
-    body: '#ddd',            // 15.3:1
-    secondary: '#aaa',       // 9.0:1
-    placeholder: '#888',     // 5.3:1
+    // Text
+    title: '#F8FAFC',
+    heading: '#F1F5F9',
+    label: '#CBD5E1',
+    textValue: '#F8FAFC',
+    body: '#E2E8F0',
+    secondary: '#94A3B8',
+    placeholder: '#64748B',
 
     // Surfaces
-    background: '#000',
-    surface: '#1c1c1e',
-    surfaceAlt: '#1a2a3a',
+    background: '#0F172A',
+    surface: '#1E293B',
+    surfaceAlt: '#162032',
 
     // Borders
-    border: '#444',
-    borderLight: '#333',
-    separator: '#333',
+    border: 'rgba(255,255,255,0.08)',
+    borderLight: 'rgba(255,255,255,0.05)',
+    borderStrong: 'rgba(255,255,255,0.15)',
+    separator: 'rgba(255,255,255,0.08)',
 
     // Interactive
-    primary: '#4da6ff',
-    success: '#34d058',
-    error: '#ff6b6b',
-    errorBg: '#3a1111',
-    warning: '#ffd666',
-    warningBg: '#3a2f00',
-    checkmark: '#34d058',
+    primary: '#EA580C',
+    primaryHover: '#F97316',
+    onPrimary: '#FFFFFF',
+    success: '#22C55E',
+    error: '#EF4444',
+    errorBg: '#1F1215',
+    warning: '#F59E0B',
+    warningBg: '#1C1408',
+    checkmark: '#22C55E',
 
     // Buttons
-    buttonDisabledBg: '#333',
-    buttonDisabledText: '#777',
-    secondaryButtonBg: '#1c1c1e',
-    secondaryButtonText: '#ddd',
-    secondaryButtonBorder: '#444',
+    buttonDisabledBg: '#1E293B',
+    buttonDisabledText: '#475569',
+    secondaryButtonBg: '#1E293B',
+    secondaryButtonText: '#E2E8F0',
+    secondaryButtonBorder: 'rgba(255,255,255,0.15)',
 
     // Input
-    inputText: '#fff',
-    inputBorder: '#555',
-    inputBg: '#1c1c1e',
+    inputText: '#F8FAFC',
+    inputBorder: 'rgba(255,255,255,0.15)',
+    inputBg: '#0F172A',
 
     // AI-populated fields
-    aiBg: '#1a2a3a',
-    aiBadge: '#4da6ff30',
-    aiBadgeText: '#4da6ff',
+    aiBg: 'rgba(59,130,246,0.08)',
+    aiBadge: 'rgba(59,130,246,0.20)',
+    aiBadgeText: '#93C5FD',
+    aiAccent: '#3B82F6',
+    aiBadgeBg: 'rgba(59,130,246,0.15)',
   },
 } as const
+
+export const typography = {
+  headingFamily: 'SpaceGrotesk-Bold',
+  bodyFamily: 'SpaceGrotesk-Medium',
+  headingWeight: '700' as const,
+  bodyWeight: '500' as const,
+  labelLetterSpacing: 1.2,
+
+  // Type scale — spread directly into StyleSheet styles
+  display:   { fontSize: 28, lineHeight: 34, fontFamily: 'SpaceGrotesk-Bold',   letterSpacing: 3.0 },
+  title:     { fontSize: 22, lineHeight: 28, fontFamily: 'SpaceGrotesk-Bold',   letterSpacing: 0.5 },
+  heading:   { fontSize: 17, lineHeight: 22, fontFamily: 'SpaceGrotesk-Bold',   letterSpacing: 0.3 },
+  body:      { fontSize: 15, lineHeight: 22, fontFamily: 'SpaceGrotesk-Medium', letterSpacing: 0 },
+  bodySmall: { fontSize: 13, lineHeight: 18, fontFamily: 'SpaceGrotesk-Medium', letterSpacing: 0 },
+  label:     { fontSize: 11, lineHeight: 14, fontFamily: 'SpaceGrotesk-Medium', letterSpacing: 1.2 },
+  caption:   { fontSize: 10, lineHeight: 14, fontFamily: 'SpaceGrotesk-Medium', letterSpacing: 1.2 },
+  button:    { fontSize: 16, lineHeight: 20, fontFamily: 'SpaceGrotesk-Bold',   letterSpacing: 0.3 },
+}
 
 export type ThemeColors = typeof colors.light
 

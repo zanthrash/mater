@@ -110,7 +110,7 @@ export class AssetRepository {
     const limit = options.limit ?? 20
     const offset = options.offset ?? 0
 
-    let query = this.supabase.from('assets').select('*', { count: 'exact' })
+    let query = this.supabase.from('assets').select('*', { count: 'exact' }).neq('status', 'deleted')
 
     if (options.category !== undefined) {
       query = query.eq('category', options.category)

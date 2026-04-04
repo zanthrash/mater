@@ -10,9 +10,13 @@ import {
   ActivityIndicator,
   Animated,
 } from 'react-native'
-import { useThemeColors } from '../theme'
+import { Ionicons } from '@expo/vector-icons'
+import { useThemeColors, typography } from '../theme'
 import { WizardHeader } from '../components/WizardHeader'
-import { camelToTitle } from '../utils/formatting'
+import { AIBadge } from '../components/AIBadge'
+import { PrimaryButton } from '../components/PrimaryButton'
+import { SpecRow } from '../components/SpecRow'
+import { camelToTitle, titleToCamel } from '../utils/formatting'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -91,64 +95,92 @@ const CORE_SPEC_KEYS = ['make', 'model', 'year', 'engineType', 'transmission', '
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
 
-function SectionHeader({ title, colors }: { title: string; colors: ReturnType<typeof useThemeColors> }) {
+function SectionHeader({ title }: { title: string }) {
+  const colors = useThemeColors()
   return (
-    <Text style={[styles.sectionHeader, { color: colors.heading }]}>{title}</Text>
+    <Text style={[styles.sectionHeader, { color: colors.primary, fontFamily: typography.headingFamily }]}>
+      {title.toUpperCase()}
+    </Text>
   )
 }
 
 function FieldLabel({
   label,
-  colors,
   isAiPopulated,
   badgeTestID,
 }: {
   label: string
-  colors: ReturnType<typeof useThemeColors>
   isAiPopulated?: boolean
   badgeTestID?: string
 }) {
-  if (isAiPopulated) {
-    return (
-      <View style={styles.fieldLabelRow}>
-        <Text style={[styles.fieldLabel, { color: colors.label }]}>✨ {label}</Text>
-        <View style={[styles.aiBadge, { backgroundColor: colors.aiBadge }]} testID={badgeTestID}>
-          <Text style={[styles.aiBadgeText, { color: colors.aiBadgeText }]}>AI</Text>
-        </View>
-      </View>
-    )
-  }
+  const colors = useThemeColors()
   return (
-    <Text style={[styles.fieldLabel, { color: colors.label }]}>{label}</Text>
+    <View style={styles.fieldLabelRow}>
+      <Text style={[styles.fieldLabel, { color: colors.secondary, fontFamily: typography.bodyFamily }]}>
+        {label.toUpperCase()}
+      </Text>
+      {isAiPopulated && <AIBadge />}
+    </View>
   )
 }
 
-function ShimmerRows({ testID, colors }: { testID: string; colors: ReturnType<typeof useThemeColors> }) {
-  const opacity = useRef(new Animated.Value(0.4)).current
+const SHIMMER_WIDTHS = ['100%', '75%', '60%'] as const
+
+function ShimmerRows({ testID }: { testID: string }) {
+  const colors = useThemeColors()
+  const shimmer = useRef(new Animated.Value(0.4)).current
 
   useEffect(() => {
     const animation = Animated.loop(
       Animated.sequence([
-        Animated.timing(opacity, { toValue: 1.0, duration: 700, useNativeDriver: true }),
-        Animated.timing(opacity, { toValue: 0.4, duration: 700, useNativeDriver: true }),
-      ]),
+        Animated.timing(shimmer, { toValue: 1, duration: 700, useNativeDriver: true }),
+        Animated.timing(shimmer, { toValue: 0.4, duration: 700, useNativeDriver: true }),
+      ])
     )
     animation.start()
     return () => animation.stop()
-  }, [opacity])
+  }, [])
 
   return (
     <View testID={testID}>
-      {[0, 1, 2].map((i) => (
+      {SHIMMER_WIDTHS.map((width, i) => (
         <Animated.View
           key={i}
-          style={[
-            styles.shimmerRow,
-            { backgroundColor: colors.surface, opacity },
-          ]}
+          style={[styles.shimmerRow, { backgroundColor: colors.surface, width }, { opacity: shimmer }]}
         />
       ))}
     </View>
+  )
+}
+
+function AiAnalysisBanner() {
+  const colors = useThemeColors()
+  const pulse = useRef(new Animated.Value(0.6)).current
+
+  useEffect(() => {
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, { toValue: 1, duration: 900, useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 0.6, duration: 900, useNativeDriver: true }),
+      ])
+    )
+    animation.start()
+    return () => animation.stop()
+  }, [])
+
+  return (
+    <Animated.View
+      style={[
+        styles.aiBanner,
+        { backgroundColor: colors.surfaceAlt, borderLeftColor: colors.primary, opacity: pulse },
+      ]}
+      testID="ai-analysis-banner"
+    >
+      <ActivityIndicator size="small" color={colors.primary} style={{ marginRight: 8 }} />
+      <Text style={[styles.aiBannerText, { color: colors.primary, fontFamily: typography.bodyFamily }]}>
+        AI is analyzing your photos...
+      </Text>
+    </Animated.View>
   )
 }
 
@@ -192,14 +224,13 @@ export function ReviewEditScreen({
     Object.entries(typeSpecificSpecs).map(([key, value], index) => ({ id: String(index), key: camelToTitle(key), value: String(value ?? '') })),
   )
 
-  // Initialize aiPopulatedFields from initial props
   const [aiPopulatedFields, setAiPopulatedFields] = useState<Set<string>>(() => {
     const fields = new Set<string>()
     for (const key of CORE_SPEC_KEYS) {
       if (coreSpecs[key] != null) fields.add(key)
     }
     for (const key of Object.keys(typeSpecificSpecs)) {
-      fields.add(key)
+      fields.add(camelToTitle(key))
     }
     return fields
   })
@@ -210,17 +241,17 @@ export function ReviewEditScreen({
     consignor: yardMetadata?.consignor ?? '',
   })
 
+  const [resolvedConflicts, setResolvedConflicts] = useState<Record<string, 'ai' | 'vin'>>({})
+
+  const [newSpecId, setNewSpecId] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
-
   const [showError, setShowError] = useState(aiError)
 
-  // Sync showError when aiError prop changes
   useEffect(() => {
     setShowError(aiError)
   }, [aiError])
 
-  // Reactivity fix: update form state when coreSpecs/typeSpecificSpecs arrive async
   useEffect(() => {
     setEditedCoreSpecs((prev) => {
       const next = { ...prev }
@@ -251,11 +282,9 @@ export function ReviewEditScreen({
       if (incomingEntries.length === 0) return prev
 
       if (prev.length === 0) {
-        // No user entries yet — replace entirely
         return incomingEntries.map(([key, value], index) => ({ id: String(index), key: camelToTitle(key), value: String(value ?? '') }))
       }
 
-      // User has entries — append only keys not already present
       const existingKeys = new Set(prev.map((s) => s.key))
       const toAdd = incomingEntries
         .filter(([key]) => !existingKeys.has(camelToTitle(key)))
@@ -272,7 +301,8 @@ export function ReviewEditScreen({
     try {
       const typeSpecsObj = editedTypeSpecs.reduce(
         (acc, { key, value }) => {
-          if (key.trim()) acc[key.trim()] = value
+          const trimmedKey = key.trim()
+          if (trimmedKey) acc[titleToCamel(trimmedKey)] = value
           return acc
         },
         {} as Record<string, string>,
@@ -306,8 +336,8 @@ export function ReviewEditScreen({
 
   const inputStyle = [
     styles.input,
-    { color: colors.inputText, borderColor: colors.inputBorder, backgroundColor: colors.inputBg },
-  ]
+    { color: colors.inputText, borderColor: colors.inputBorder, backgroundColor: colors.inputBg, fontFamily: typography.bodyFamily },
+  ] as const
 
   const conflictFields: Array<{
     specKey: string
@@ -319,61 +349,64 @@ export function ReviewEditScreen({
     { specKey: 'model', label: 'Model', aiValue: coreSpecs.model, vinValue: vinResult?.model },
     { specKey: 'year', label: 'Year', aiValue: coreSpecs.year, vinValue: vinResult?.year },
     { specKey: 'engineType', label: 'Engine Type', aiValue: coreSpecs.engineType, vinValue: vinResult?.engineType },
-    {
-      specKey: 'transmission',
-      label: 'Transmission',
-      aiValue: coreSpecs.transmission,
-      vinValue: vinResult?.transmission,
-    },
+    { specKey: 'transmission', label: 'Transmission', aiValue: coreSpecs.transmission, vinValue: vinResult?.transmission },
     { specKey: 'gvwLbs', label: 'GVW (lbs)', aiValue: coreSpecs.gvwLbs, vinValue: vinResult?.gvwLbs },
     { specKey: 'hoursOnMeter', label: 'Hours on Meter', aiValue: coreSpecs.hoursOnMeter, vinValue: null },
   ]
 
   return (
     <View style={[styles.outerContainer, { backgroundColor: colors.background }]}>
-      <WizardHeader title="Review & Edit" showBack onBack={onBack} showMenu onRestart={onRestart} />
+      <WizardHeader
+        title="Review & Edit"
+        showBack
+        onBack={onBack}
+        showMenu
+        onRestart={onRestart}
+        stepInfo={{ current: 4, total: 5 }}
+      />
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
 
-        {/* Error banner */}
+        {/* AI analysis in-progress banner */}
+        {aiLoading && <AiAnalysisBanner />}
+
+        {/* AI Error banner */}
         {aiError && !aiLoading && showError && (
-          <View
-            style={[styles.errorBanner, { backgroundColor: colors.errorBg }]}
-            testID="ai-error-banner"
-          >
-            <Text style={[styles.errorBannerText, { color: colors.error }]}>
-              ⚠ AI analysis failed — fill in manually
+          <View style={[styles.errorBanner, { backgroundColor: colors.errorBg }]} testID="ai-error-banner">
+            <Ionicons name="alert-circle-outline" size={16} color={colors.error} style={{ marginRight: 8 }} />
+            <Text style={[styles.errorBannerText, { color: colors.error, fontFamily: typography.bodyFamily }]}>
+              AI analysis failed — fill in manually
             </Text>
             <TouchableOpacity onPress={() => onRetryAnalysis?.()} testID="ai-retry-button">
-              <Text style={[styles.errorBannerAction, { color: colors.error }]}>Retry</Text>
+              <Text style={[styles.errorBannerAction, { color: colors.error, fontFamily: typography.bodyFamily }]}>Retry</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => setShowError(false)} testID="ai-dismiss-button">
-              <Text style={[styles.errorBannerAction, { color: colors.error }]}>Dismiss</Text>
+              <Text style={[styles.errorBannerAction, { color: colors.error, fontFamily: typography.bodyFamily }]}>Dismiss</Text>
             </TouchableOpacity>
           </View>
         )}
 
         {/* Section 1: Taxonomy */}
-        <SectionHeader title="Taxonomy" colors={colors} />
-        <View style={[styles.sectionBox, { borderColor: colors.border }]}>
-          <FieldLabel label="Category" colors={colors} />
+        <SectionHeader title="Taxonomy" />
+        <View style={[styles.sectionBox, { borderColor: colors.border, backgroundColor: colors.surface }]}>
+          <FieldLabel label="Category" />
           <TextInput
             style={inputStyle}
             value={editedTaxonomy.category}
             onChangeText={(text) => setEditedTaxonomy((prev) => ({ ...prev, category: text }))}
+            placeholderTextColor={colors.placeholder}
             accessibilityLabel="Category"
             testID="taxonomy-category"
           />
-
-          <FieldLabel label="Type" colors={colors} />
+          <FieldLabel label="Type" />
           <TextInput
             style={inputStyle}
             value={editedTaxonomy.type}
             onChangeText={(text) => setEditedTaxonomy((prev) => ({ ...prev, type: text }))}
+            placeholderTextColor={colors.placeholder}
             accessibilityLabel="Type"
             testID="taxonomy-type"
           />
-
-          <FieldLabel label="Subtype" colors={colors} />
+          <FieldLabel label="Subtype" />
           <TextInput
             style={inputStyle}
             value={editedTaxonomy.subtype}
@@ -386,10 +419,10 @@ export function ReviewEditScreen({
         </View>
 
         {/* Section 2: Core Specs */}
-        <SectionHeader title="Core Specs" colors={colors} />
-        <View style={[styles.sectionBox, { borderColor: colors.border }]}>
+        <SectionHeader title="Core Specs" />
+        <View style={[styles.sectionBox, { borderColor: colors.border, backgroundColor: colors.surface }]}>
           {aiLoading ? (
-            <ShimmerRows testID="ai-loading-core-specs" colors={colors} />
+            <ShimmerRows testID="ai-loading-core-specs" />
           ) : (
             conflictFields.map(({ specKey, label, aiValue, vinValue }) => {
               const conflict = hasConflict(aiValue, vinValue)
@@ -397,41 +430,71 @@ export function ReviewEditScreen({
               return (
                 <View
                   key={specKey}
-                  style={[styles.specRow, conflict && { backgroundColor: colors.warningBg }]}
+                  style={[
+                    styles.specRow,
+                    conflict && !resolvedConflicts[specKey] && {
+                      backgroundColor: colors.warningBg,
+                      borderLeftColor: colors.warning,
+                      borderLeftWidth: 3,
+                    },
+                  ]}
                   testID={conflict ? `conflict-row-${specKey}` : undefined}
                 >
                   <FieldLabel
                     label={label}
-                    colors={colors}
                     isAiPopulated={isAi}
                     badgeTestID={isAi ? `ai-badge-${specKey}` : undefined}
                   />
-                  {conflict && (
-                    <View style={styles.conflictHints}>
-                      <Text style={[styles.conflictHint, { color: colors.warning }]}>
-                        AI: {String(aiValue)}
-                      </Text>
-                      <Text style={[styles.conflictHint, { color: colors.warning }]}>
-                        VIN: {String(vinValue)}
-                      </Text>
+                  {conflict && !resolvedConflicts[specKey] && (
+                    <View style={styles.conflictPills}>
                       <TouchableOpacity
-                        onPress={() =>
-                          setEditedCoreSpecs((prev) => ({
-                            ...prev,
-                            [specKey]: String(aiValue ?? ''),
-                          }))
-                        }
+                        style={[styles.conflictPill, { backgroundColor: colors.aiBadgeBg, borderColor: colors.aiAccent }]}
+                        onPress={() => {
+                          setEditedCoreSpecs((prev) => ({ ...prev, [specKey]: String(aiValue ?? '') }))
+                          setResolvedConflicts((prev) => ({ ...prev, [specKey]: 'ai' }))
+                        }}
+                        activeOpacity={0.7}
                         testID={`use-ai-${specKey}`}
+                        accessibilityLabel={`Use AI value: ${String(aiValue)}`}
+                        accessibilityRole="button"
                       >
-                        <Text style={[styles.useAiLink, { color: colors.primary }]}>Use AI value</Text>
+                        <Text style={[styles.conflictPillSource, { color: colors.aiAccent, fontFamily: typography.bodyFamily }]}>
+                          AI
+                        </Text>
+                        <Text style={[styles.conflictPillValue, { color: colors.aiAccent, fontFamily: typography.bodyFamily }]}>
+                          {String(aiValue)}
+                        </Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.conflictPill, { backgroundColor: colors.warningBg, borderColor: colors.warning }]}
+                        onPress={() => {
+                          setEditedCoreSpecs((prev) => ({ ...prev, [specKey]: String(vinValue ?? '') }))
+                          setResolvedConflicts((prev) => ({ ...prev, [specKey]: 'vin' }))
+                        }}
+                        activeOpacity={0.7}
+                        testID={`use-vin-${specKey}`}
+                        accessibilityLabel={`Use VIN value: ${String(vinValue)}`}
+                        accessibilityRole="button"
+                      >
+                        <Text style={[styles.conflictPillSource, { color: colors.warning, fontFamily: typography.bodyFamily }]}>
+                          VIN
+                        </Text>
+                        <Text style={[styles.conflictPillValue, { color: colors.warning, fontFamily: typography.bodyFamily }]}>
+                          {String(vinValue)}
+                        </Text>
                       </TouchableOpacity>
                     </View>
                   )}
+                  {conflict && resolvedConflicts[specKey] && (
+                    <View style={styles.resolvedIndicator}>
+                      <Ionicons name="checkmark-circle" size={13} color={colors.success} />
+                      <Text style={[styles.resolvedText, { color: colors.secondary, fontFamily: typography.bodyFamily }]}>
+                        {resolvedConflicts[specKey] === 'ai' ? 'AI value selected' : 'VIN value selected'}
+                      </Text>
+                    </View>
+                  )}
                   <TextInput
-                    style={[
-                      inputStyle,
-                      isAi ? { backgroundColor: colors.aiBg } : undefined,
-                    ]}
+                    style={[...inputStyle, isAi ? { backgroundColor: colors.aiBg } : {}]}
                     value={editedCoreSpecs[specKey]}
                     onChangeText={(text) => {
                       manuallyEditedFields.current.add(specKey)
@@ -444,6 +507,7 @@ export function ReviewEditScreen({
                     }}
                     accessibilityLabel={label}
                     testID={`spec-${specKey}`}
+                    placeholderTextColor={colors.placeholder}
                     keyboardType={
                       specKey === 'year' || specKey === 'gvwLbs' || specKey === 'hoursOnMeter'
                         ? 'numeric'
@@ -457,43 +521,24 @@ export function ReviewEditScreen({
         </View>
 
         {/* Section 3: Type-Specific Specs */}
-        <SectionHeader title="Type-Specific Specs" colors={colors} />
-        <View style={[styles.sectionBox, { borderColor: colors.border }]}>
+        <SectionHeader title="Type-Specific Specs" />
+        <View style={[styles.sectionBox, { borderColor: colors.border, backgroundColor: colors.surface }]}>
           {aiLoading ? (
-            <ShimmerRows testID="ai-loading-type-specs" colors={colors} />
+            <ShimmerRows testID="ai-loading-type-specs" />
           ) : (
             <>
-              {editedTypeSpecs.map((spec, index) => {
-                const isAi = aiPopulatedFields.has(spec.key)
-                return (
-                  <View key={spec.id} style={styles.typeSpecRow}>
-                    <TextInput
-                      style={[inputStyle, styles.typeSpecKeyInput]}
-                      value={spec.key}
-                      onChangeText={(text) => {
-                        manuallyEditedFields.current.add(text)
-                        setAiPopulatedFields((prev) => {
-                          const next = new Set(prev)
-                          next.delete(spec.key)
-                          return next
-                        })
-                        setEditedTypeSpecs((prev) =>
-                          prev.map((s, i) => (i === index ? { ...s, key: text } : s)),
-                        )
-                      }}
-                      placeholder="Key"
-                      placeholderTextColor={colors.placeholder}
-                      accessibilityLabel={`Type spec key ${index}`}
-                      testID={`type-spec-key-${index}`}
-                    />
-                    <TextInput
-                      style={[
-                        inputStyle,
-                        styles.typeSpecValueInput,
-                        isAi ? { backgroundColor: colors.aiBg } : undefined,
-                      ]}
+              <View style={{ gap: 12 }}>
+                {editedTypeSpecs.map((spec, index) => {
+                  const isAi = aiPopulatedFields.has(spec.key)
+                  const isNew = spec.id === newSpecId
+                  return (
+                    <SpecRow
+                      key={spec.id}
+                      specKey={spec.key}
                       value={spec.value}
-                      onChangeText={(text) => {
+                      isAiPopulated={isAi}
+                      isNewSpec={isNew}
+                      onValueChange={(text) => {
                         manuallyEditedFields.current.add(spec.key)
                         setAiPopulatedFields((prev) => {
                           const next = new Set(prev)
@@ -504,51 +549,65 @@ export function ReviewEditScreen({
                           prev.map((s, i) => (i === index ? { ...s, value: text } : s)),
                         )
                       }}
-                      placeholder="Value"
-                      placeholderTextColor={colors.placeholder}
-                      accessibilityLabel={`Type spec value ${index}`}
-                      testID={`type-spec-value-${index}`}
+                      onKeyChange={isNew ? (text) => {
+                        setEditedTypeSpecs((prev) =>
+                          prev.map((s, i) => (i === index ? { ...s, key: text } : s)),
+                        )
+                      } : undefined}
+                      onDelete={() => {
+                        setEditedTypeSpecs((prev) => prev.filter((_, i) => i !== index))
+                        if (spec.id === newSpecId) setNewSpecId(null)
+                      }}
+                      testID={`type-spec-${index}`}
                     />
-                  </View>
-                )
-              })}
+                  )
+                })}
+              </View>
               <TouchableOpacity
-                style={[styles.addSpecButton, { borderColor: colors.primary }]}
-                onPress={() => setEditedTypeSpecs((prev) => [...prev, { id: String(Date.now()) + String(Math.random()), key: '', value: '' }])}
+                style={[styles.addSpecButton, { borderColor: colors.borderStrong }]}
+                onPress={() => {
+                  const id = String(Date.now()) + String(Math.random())
+                  setEditedTypeSpecs((prev) => [...prev, { id, key: '', value: '' }])
+                  setNewSpecId(id)
+                }}
                 testID="add-spec-button"
               >
-                <Text style={[styles.addSpecButtonText, { color: colors.primary }]}>+ Add Spec</Text>
+                <Ionicons name="add" size={14} color={colors.primary} />
+                <Text style={[styles.addSpecButtonText, { color: colors.primary, fontFamily: typography.bodyFamily }]}>
+                  Add Spec
+                </Text>
               </TouchableOpacity>
             </>
           )}
         </View>
 
         {/* Section 4: Yard Metadata */}
-        <SectionHeader title="Yard Metadata" colors={colors} />
-        <View style={[styles.sectionBox, { borderColor: colors.border }]}>
-          <FieldLabel label="Lot Number" colors={colors} />
+        <SectionHeader title="Yard Metadata" />
+        <View style={[styles.sectionBox, { borderColor: colors.border, backgroundColor: colors.surface }]}>
+          <FieldLabel label="Lot Number" />
           <TextInput
             style={inputStyle}
             value={editedYard.lotNumber}
             onChangeText={(text) => setEditedYard((prev) => ({ ...prev, lotNumber: text }))}
+            placeholderTextColor={colors.placeholder}
             accessibilityLabel="Lot Number"
             testID="yard-lot-number"
           />
-
-          <FieldLabel label="Yard Location" colors={colors} />
+          <FieldLabel label="Yard Location" />
           <TextInput
             style={inputStyle}
             value={editedYard.yardLocation}
             onChangeText={(text) => setEditedYard((prev) => ({ ...prev, yardLocation: text }))}
+            placeholderTextColor={colors.placeholder}
             accessibilityLabel="Yard Location"
             testID="yard-location"
           />
-
-          <FieldLabel label="Consignor" colors={colors} />
+          <FieldLabel label="Consignor" />
           <TextInput
             style={inputStyle}
             value={editedYard.consignor}
             onChangeText={(text) => setEditedYard((prev) => ({ ...prev, consignor: text }))}
+            placeholderTextColor={colors.placeholder}
             accessibilityLabel="Consignor"
             testID="yard-consignor"
           />
@@ -557,7 +616,7 @@ export function ReviewEditScreen({
         {/* Section 5: Photos */}
         {photos.length > 0 && (
           <>
-            <SectionHeader title="Photos" colors={colors} />
+            <SectionHeader title="Photos" />
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -568,11 +627,11 @@ export function ReviewEditScreen({
                 <View key={index} style={styles.photoThumbWrapper}>
                   <Image
                     source={{ uri: photo.uri }}
-                    style={styles.photoThumb}
+                    style={[styles.photoThumb, { borderColor: colors.border }]}
                     testID={`photo-thumb-${index}`}
                   />
                   <Text
-                    style={[styles.photoLabel, { color: colors.secondary }]}
+                    style={[styles.photoLabel, { color: colors.secondary, fontFamily: typography.bodyFamily }]}
                     numberOfLines={1}
                   >
                     {photo.label}
@@ -585,32 +644,24 @@ export function ReviewEditScreen({
 
         {/* Save error banner */}
         {submitError && (
-          <View
-            style={[styles.errorBanner, { backgroundColor: colors.errorBg }]}
-            testID="save-error-banner"
-          >
-            <Text style={[styles.errorBannerText, { color: colors.error }]}>
-              ⚠ Save failed — {submitError}
+          <View style={[styles.errorBanner, { backgroundColor: colors.errorBg }]} testID="save-error-banner">
+            <Ionicons name="alert-circle-outline" size={16} color={colors.error} style={{ marginRight: 8 }} />
+            <Text style={[styles.errorBannerText, { color: colors.error, fontFamily: typography.bodyFamily }]}>
+              Save failed — {submitError}
             </Text>
           </View>
         )}
 
         {/* Save Button */}
-        <TouchableOpacity
-          style={[
-            styles.saveButton,
-            { backgroundColor: submitting ? colors.buttonDisabledBg : colors.primary },
-          ]}
+        <PrimaryButton
+          title="Save Asset"
           onPress={handleSubmit}
+          loading={submitting}
           disabled={submitting}
+          icon="checkmark"
+          style={styles.saveButton}
           testID="save-button"
-        >
-          {submitting ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.saveButtonText}>Save Asset</Text>
-          )}
-        </TouchableOpacity>
+        />
       </ScrollView>
     </View>
   )
@@ -624,90 +675,90 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    padding: 24,
+    padding: 20,
     paddingBottom: 48,
   },
   sectionHeader: {
-    fontSize: 17,
-    fontWeight: '700',
+    ...typography.label,
     marginTop: 24,
-    marginBottom: 10,
+    marginBottom: 8,
   },
   sectionBox: {
-    borderRadius: 8,
+    borderRadius: 10,
     borderWidth: 1,
-    padding: 12,
-    gap: 6,
+    padding: 14,
+    gap: 4,
   },
   fieldLabelRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    marginTop: 8,
+    marginBottom: 4,
   },
   fieldLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    marginTop: 8,
-    marginBottom: 2,
-  },
-  aiBadge: {
-    borderRadius: 4,
-    paddingHorizontal: 5,
-    paddingVertical: 1,
-  },
-  aiBadgeText: {
-    fontSize: 10,
-    fontWeight: '700',
+    ...typography.caption,
   },
   input: {
     borderWidth: 1,
-    borderRadius: 6,
+    borderRadius: 8,
     paddingHorizontal: 10,
-    paddingVertical: 8,
-    fontSize: 14,
+    paddingVertical: 9,
+    ...typography.body,
+    minHeight: 40,
   },
   specRow: {
-    borderRadius: 6,
-    padding: 6,
+    borderRadius: 8,
+    padding: 4,
     marginBottom: 4,
+    paddingLeft: 8,
   },
-  conflictHints: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 4,
-    alignItems: 'center',
-  },
-  conflictHint: {
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  useAiLink: {
-    fontSize: 12,
-    fontWeight: '600',
-    textDecorationLine: 'underline',
-  },
-  typeSpecRow: {
+  conflictPills: {
     flexDirection: 'row',
     gap: 8,
-    marginBottom: 4,
+    marginBottom: 8,
   },
-  typeSpecKeyInput: {
+  conflictPill: {
     flex: 1,
+    minHeight: 56,
+    borderWidth: 1.5,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
   },
-  typeSpecValueInput: {
-    flex: 2,
+  conflictPillSource: {
+    ...typography.caption,
+    textTransform: 'uppercase',
+    opacity: 0.7,
+  },
+  conflictPillValue: {
+    ...typography.body,
+    textAlign: 'center',
+  },
+  resolvedIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 6,
+  },
+  resolvedText: {
+    ...typography.label,
   },
   addSpecButton: {
-    marginTop: 8,
+    marginTop: 12,
     borderWidth: 1,
-    borderRadius: 6,
-    paddingVertical: 8,
+    borderRadius: 8,
+    paddingVertical: 9,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
   },
   addSpecButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
+    ...typography.bodySmall,
   },
   errorBanner: {
     borderRadius: 8,
@@ -718,17 +769,29 @@ const styles = StyleSheet.create({
   },
   errorBannerText: {
     flex: 1,
-    fontSize: 14,
+    ...typography.bodySmall,
   },
   errorBannerAction: {
-    fontSize: 14,
-    fontWeight: '600',
+    ...typography.bodySmall,
     marginLeft: 12,
   },
   shimmerRow: {
-    height: 16,
-    borderRadius: 4,
-    marginBottom: 12,
+    height: 36,
+    borderRadius: 8,
+    marginBottom: 10,
+  },
+  aiBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderLeftWidth: 3,
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    marginBottom: 16,
+  },
+  aiBannerText: {
+    ...typography.body,
+    flex: 1,
   },
   photoScroll: {
     marginTop: 4,
@@ -742,25 +805,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   photoThumb: {
-    width: 72,
-    height: 72,
-    borderRadius: 6,
+    width: 76,
+    height: 76,
+    borderRadius: 8,
+    borderWidth: 1,
   },
   photoLabel: {
-    fontSize: 10,
+    ...typography.caption,
     marginTop: 4,
-    maxWidth: 72,
+    maxWidth: 76,
     textAlign: 'center',
   },
   saveButton: {
-    marginTop: 32,
-    paddingVertical: 14,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  saveButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    marginTop: 28,
   },
 })

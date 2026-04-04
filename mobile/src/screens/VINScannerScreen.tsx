@@ -10,9 +10,13 @@ import {
   Dimensions,
   LayoutChangeEvent,
 } from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
 import { CameraView, useCameraPermissions } from 'expo-camera'
 import { PhotoCaptureModule, CropRegion } from '../modules/PhotoCaptureModule'
 import { APIClient } from '../services/APIClient'
+import { typography } from '../theme'
+
+const ORANGE = '#EA580C'
 
 export interface VINScannerScreenProps {
   onVinScanned: (vin: string) => void
@@ -224,9 +228,11 @@ export function VINScannerScreen({
           style={styles.flashButton}
           onPress={() => setFlash(flash === 'off' ? 'on' : 'off')}
         >
-          <Text style={styles.flashButtonText}>
-            Flash: {flash === 'off' ? 'Off' : 'On'}
-          </Text>
+          <Ionicons
+            name={flash === 'off' ? 'flash-off' : 'flash'}
+            size={18}
+            color={flash === 'on' ? ORANGE : '#fff'}
+          />
         </TouchableOpacity>
       </View>
       <View style={styles.bottomControls}>
@@ -257,14 +263,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    ...typography.title,
     color: '#fff',
     marginBottom: 12,
     textAlign: 'center',
   },
   permissionText: {
-    fontSize: 16,
+    ...typography.body,
     color: '#ccc',
     textAlign: 'center',
     marginTop: 16,
@@ -272,7 +277,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
   },
   settingsButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: ORANGE,
     paddingVertical: 12,
     paddingHorizontal: 32,
     borderRadius: 8,
@@ -280,8 +285,7 @@ const styles = StyleSheet.create({
   },
   settingsButtonText: {
     color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    ...typography.button,
   },
   cancelButton: {
     paddingVertical: 12,
@@ -289,8 +293,7 @@ const styles = StyleSheet.create({
   },
   cancelButtonText: {
     color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    ...typography.button,
   },
   topControls: {
     position: 'absolute',
@@ -309,8 +312,7 @@ const styles = StyleSheet.create({
   },
   flashButtonText: {
     color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
+    ...typography.bodySmall,
   },
   bottomControls: {
     position: 'absolute',
@@ -357,7 +359,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   usePhotoButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: ORANGE,
     paddingVertical: 14,
     paddingHorizontal: 32,
     borderRadius: 8,
@@ -370,8 +372,7 @@ const styles = StyleSheet.create({
   },
   controlButtonText: {
     color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    ...typography.button,
   },
   processingOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -381,7 +382,7 @@ const styles = StyleSheet.create({
   },
   processingText: {
     color: '#fff',
-    fontSize: 16,
+    ...typography.body,
     marginTop: 12,
   },
   errorBanner: {
@@ -393,7 +394,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: '#fff',
-    fontSize: 14,
+    ...typography.bodySmall,
     textAlign: 'center',
   },
   // Framing guide overlay styles
@@ -415,7 +416,7 @@ const styles = StyleSheet.create({
   framingGuide: {
     flex: FRAME_WIDTH_RATIO,
     borderWidth: 2,
-    borderColor: '#fff',
+    borderColor: ORANGE,
     borderRadius: 8,
   },
   framingLabelContainer: {
@@ -425,8 +426,7 @@ const styles = StyleSheet.create({
   },
   framingLabel: {
     color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
+    ...typography.label,
   },
   framingDimBottom: {
     flex: 1,

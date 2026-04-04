@@ -4,13 +4,20 @@
     "slug": "mater",
     "version": "1.0.0",
     "orientation": "portrait",
+    "splash": {
+      "backgroundColor": "#0F172A",
+      "resizeMode": "contain"
+    },
     "ios": {
       "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#0F172A"
       }
-    }
+    },
+    "plugins": [
+      "expo-font"
+    ]
   }
 }

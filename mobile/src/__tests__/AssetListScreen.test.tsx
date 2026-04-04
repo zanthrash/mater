@@ -36,6 +36,7 @@ const defaultProps = {
   onNewIntake: jest.fn(),
   onAssetPress: jest.fn(),
   onSearch: jest.fn(),
+  onDeleteAsset: jest.fn(),
 }
 
 it('shows "+" button and "Mater" title', () => {
