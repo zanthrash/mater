@@ -170,7 +170,26 @@ export const assetsRoute: FastifyPluginAsync = async (fastify) => {
   )
 
   // GET /api/assets
-  fastify.get<{ Querystring: ListQuery }>('/api/assets', async (request, reply) => {
+  fastify.get<{ Querystring: ListQuery }>(
+    '/api/assets',
+    {
+      schema: {
+        querystring: {
+          type: 'object',
+          properties: {
+            category: { type: 'string' },
+            type: { type: 'string' },
+            make: { type: 'string' },
+            status: { type: 'string' },
+            search: { type: 'string' },
+            limit: { type: 'string' },
+            offset: { type: 'string' },
+            userId: { type: 'string' },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
     try {
       const { category, type, make, status, search, limit, offset, userId } = request.query
       const result = await repo.list({
