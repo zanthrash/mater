@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Alert } from 'react-native'
+import { Alert, View, ActivityIndicator } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
 import * as SplashScreen from 'expo-splash-screen'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { useAppFonts } from './fonts'
 import { useThemeContext } from './ThemeContext'
+import { useThemeColors } from './theme'
 
 SplashScreen.preventAutoHideAsync()
 import { AssetListScreen } from './screens/AssetListScreen'
@@ -16,6 +17,8 @@ import { GuidedPhotosScreen } from './screens/GuidedPhotosScreen'
 import { ReviewEditScreen } from './screens/ReviewEditScreen'
 import { SubmitScreen } from './screens/SubmitScreen'
 import { ThemeProvider } from './ThemeContext'
+import { UserProvider, useUserContext } from './UserContext'
+import { LoginScreen } from './screens/LoginScreen'
 import { WizardStateManager } from './state/WizardStateManager'
 import type { AssetPhoto, IntakeDraft } from './state/WizardStateManager'
 import { APIClient } from './services/APIClient'
@@ -28,6 +31,8 @@ const stateManager = new WizardStateManager()
 const client = new APIClient()
 
 function AppContent() {
+  const colors = useThemeColors()
+  const { user, loading: userLoading, login, logout } = useUserContext()
   const [screen, setScreen] = useState<Screen>('home')
   const [assets, setAssets] = useState<Asset[]>([])
   const [assetsLoading, setAssetsLoading] = useState(false)
@@ -183,6 +188,18 @@ function AppContent() {
     }
     setHistory((prev) => prev.slice(0, -1))
     setScreen(target)
+  }
+
+  if (userLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    )
+  }
+
+  if (!user) {
+    return <LoginScreen onLogin={login} />
   }
 
   if (screen === 'home') {
@@ -344,7 +361,8 @@ function AppContent() {
 
           const result = await client.createAsset({
             vinSerial: vinData?.vin,
-            operatorName: undefined,
+            operatorName: user.display_name,
+            userId: user.id,
             gpsLat,
             gpsLon,
             photos: photos.map((p) => ({
@@ -421,7 +439,9 @@ export default function App() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <ThemeProvider>
-          <AppShell />
+          <UserProvider>
+            <AppShell />
+          </UserProvider>
         </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
