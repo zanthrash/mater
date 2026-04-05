@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 
 const DRAFT_KEY = 'intake_draft'
 
-export type IntakeStep = 'home' | 'overview' | 'vin' | 'guided-photos' | 'review' | 'submit-success'
+export type IntakeStep = 'home' | 'overview' | 'vin' | 'taxonomy-validation' | 'guided-photos' | 'review' | 'submit-success'
 
 export interface AssetPhoto {
   uri: string

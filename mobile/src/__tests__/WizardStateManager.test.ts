@@ -142,11 +142,11 @@ describe('WizardStateManager', () => {
     expect(parsed.yardMetadata).toEqual(yardMetadata)
   })
 
-  it('handles all valid IntakeStep values', async () => {
+  it('handles all valid IntakeStep values including taxonomy-validation', async () => {
     ;(AsyncStorage.getItem as jest.Mock).mockResolvedValue(null)
     ;(AsyncStorage.setItem as jest.Mock).mockResolvedValue(undefined)
 
-    const steps = ['home', 'overview', 'vin', 'guided-photos', 'review', 'submit-success'] as const
+    const steps = ['home', 'overview', 'vin', 'taxonomy-validation', 'guided-photos', 'review', 'submit-success'] as const
 
     for (const step of steps) {
       await manager.saveStep(step, {})

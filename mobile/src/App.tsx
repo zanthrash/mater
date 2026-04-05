@@ -15,6 +15,7 @@ import { OverviewScreen } from './screens/OverviewScreen'
 import { VINEntryScreen } from './screens/VINEntryScreen'
 import { GuidedPhotosScreen } from './screens/GuidedPhotosScreen'
 import { ReviewEditScreen } from './screens/ReviewEditScreen'
+import { TaxonomyValidationScreen } from './screens/TaxonomyValidationScreen'
 import { SubmitScreen } from './screens/SubmitScreen'
 import { ThemeProvider } from './ThemeContext'
 import { UserProvider, useUserContext } from './UserContext'
@@ -25,7 +26,7 @@ import { APIClient } from './services/APIClient'
 import type { Asset, VinResult, ClassificationResult, AnalysisResult, TaxonomyCategoryNode } from './services/APIClient'
 import * as Location from 'expo-location'
 
-type Screen = 'home' | 'asset-detail' | 'overview' | 'vin' | 'guided-photos' | 'review' | 'submit-success'
+type Screen = 'home' | 'asset-detail' | 'overview' | 'vin' | 'taxonomy-validation' | 'guided-photos' | 'review' | 'submit-success'
 
 const stateManager = new WizardStateManager()
 const client = new APIClient()
@@ -45,6 +46,7 @@ function AppContent() {
   const [vinData, setVinData] = useState<{ vin: string; result: VinResult | null } | null>(null)
   const [classificationResult, setClassificationResult] = useState<ClassificationResult | null>(null)
   const [classificationLoading, setClassificationLoading] = useState(false)
+  const [confirmedChecklist, setConfirmedChecklist] = useState<string[] | null>(null)
   const [photos, setPhotos] = useState<AssetPhoto[]>([])
   const [aiSpecResult, setAiSpecResult] = useState<AnalysisResult | null>(null)
   const [aiAnalysisLoading, setAiAnalysisLoading] = useState(false)
@@ -110,7 +112,7 @@ function AppContent() {
                 if (latestDraft.classificationResult) setClassificationResult(latestDraft.classificationResult)
                 if (latestDraft.photos) setPhotos(latestDraft.photos)
                 if (latestDraft.aiSpecResult) setAiSpecResult(latestDraft.aiSpecResult)
-                const validSteps: Screen[] = ['home', 'asset-detail', 'overview', 'vin', 'guided-photos', 'review', 'submit-success']
+                const validSteps: Screen[] = ['home', 'asset-detail', 'overview', 'vin', 'taxonomy-validation', 'guided-photos', 'review', 'submit-success']
                 const target = validSteps.includes(latestDraft.step as Screen) ? (latestDraft.step as Screen) : 'home'
                 setScreen(target)
               }
@@ -127,6 +129,7 @@ function AppContent() {
     setVinData(null)
     setClassificationResult(null)
     setClassificationLoading(false)
+    setConfirmedChecklist(null)
     setPhotos([])
     setAiSpecResult(null)
     setAiAnalysisLoading(false)
@@ -184,6 +187,13 @@ function AppContent() {
     } else if (target === 'vin') {
       setClassificationResult(null)
       setClassificationLoading(false)
+      setConfirmedChecklist(null)
+      setPhotos([])
+      setAiSpecResult(null)
+      setAiAnalysisLoading(false)
+      setAiAnalysisError(false)
+    } else if (target === 'taxonomy-validation') {
+      setConfirmedChecklist(null)
       setPhotos([])
       setAiSpecResult(null)
       setAiAnalysisLoading(false)
@@ -283,15 +293,15 @@ function AppContent() {
         onRestart={resetAll}
         onContinue={async (vin, vinResult) => {
           setVinData({ vin, result: vinResult })
-          stateManager.saveStep('guided-photos', { vin, vinResult: vinResult ?? null })
-          navigate('guided-photos')
+          stateManager.saveStep('taxonomy-validation', { vin, vinResult: vinResult ?? null })
+          navigate('taxonomy-validation')
           // Re-classify with VIN for better accuracy only if VIN was provided
           if (vin && vin.trim().length > 0 && overviewBase64) {
             setClassificationLoading(true)
             try {
               const result = await client.classifyEquipment([{ base64: overviewBase64 }], vin)
               setClassificationResult(result)
-              stateManager.saveStep('guided-photos', { classificationResult: result })
+              stateManager.saveStep('taxonomy-validation', { classificationResult: result })
             } catch {
               // Keep whatever result we already have from the earlier call
             } finally {
@@ -303,8 +313,34 @@ function AppContent() {
     )
   }
 
+  if (screen === 'taxonomy-validation') {
+    return (
+      <TaxonomyValidationScreen
+        classificationResult={classificationResult}
+        classificationLoading={classificationLoading}
+        taxonomyTree={taxonomyTree}
+        onConfirm={(taxonomy, checklist) => {
+          setClassificationResult((prev) =>
+            prev
+              ? { ...prev, taxonomy: { ...taxonomy, confidence: prev.taxonomy.confidence }, photoChecklist: checklist }
+              : { taxonomy: { ...taxonomy, confidence: 0 }, photoChecklist: checklist }
+          )
+          setConfirmedChecklist(checklist)
+          stateManager.saveStep('guided-photos', {
+            classificationResult: classificationResult
+              ? { ...classificationResult, taxonomy: { ...taxonomy, confidence: classificationResult.taxonomy.confidence }, photoChecklist: checklist }
+              : { taxonomy: { ...taxonomy, confidence: 0 }, photoChecklist: checklist },
+          })
+          navigate('guided-photos')
+        }}
+        onBack={goBack}
+        onRestart={resetAll}
+      />
+    )
+  }
+
   if (screen === 'guided-photos') {
-    const checklist = classificationResult?.photoChecklist ?? ['Front', 'Rear', 'Left Side', 'Right Side', 'Interior', 'Engine', 'Serial Plate']
+    const checklist = confirmedChecklist ?? classificationResult?.photoChecklist ?? ['Front', 'Rear', 'Left Side', 'Right Side', 'Interior', 'Engine', 'Serial Plate']
     return (
       <GuidedPhotosScreen
         photoChecklist={checklist}
