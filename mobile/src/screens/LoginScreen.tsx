@@ -44,7 +44,7 @@ export function LoginScreen({ onLogin }: Props) {
       <View style={styles.content}>
         <Image source={logo} style={styles.logo} resizeMode="contain" accessibilityLabel="rb AI logo" />
         <Text style={[typography.title, { color: colors.heading, marginTop: 24, textAlign: 'center' }]}>
-          ASSSET INTAKE
+          ASSET INTAKE
         </Text>
         <Text style={[typography.body, { color: colors.secondary, marginTop: 8, textAlign: 'center' }]}>
           Enter your email to get started
