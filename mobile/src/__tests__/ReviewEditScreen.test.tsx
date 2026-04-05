@@ -2,6 +2,12 @@ import React from 'react'
 import { render, fireEvent, waitFor, act } from '@testing-library/react-native'
 import { ReviewEditScreen } from '../screens/ReviewEditScreen'
 
+jest.mock('@react-native-async-storage/async-storage', () => ({
+  getItem: jest.fn().mockResolvedValue(null),
+  setItem: jest.fn().mockResolvedValue(undefined),
+  removeItem: jest.fn().mockResolvedValue(undefined),
+}))
+
 jest.mock('react-native/Libraries/Utilities/useColorScheme', () => ({
   default: jest.fn().mockReturnValue('light'),
 }))
@@ -47,14 +53,13 @@ const defaultProps = {
   aiError: false,
 }
 
-// ── Test 1: Taxonomy fields pre-filled ────────────────────────────────────────
+// ── Test 1: Taxonomy picker pre-filled ───────────────────────────────────────
 
-it('renders taxonomy fields pre-filled from props', () => {
-  const { getByTestId } = render(<ReviewEditScreen {...defaultProps} />)
+it('renders taxonomy picker pre-filled from props', () => {
+  const { getByTestId, getByText } = render(<ReviewEditScreen {...defaultProps} />)
 
-  expect(getByTestId('taxonomy-category').props.value).toBe('Construction')
-  expect(getByTestId('taxonomy-type').props.value).toBe('Excavator')
-  expect(getByTestId('taxonomy-subtype').props.value).toBe('Mini')
+  expect(getByTestId('taxonomy-picker-display')).toBeTruthy()
+  expect(getByText('Construction › Excavator › Mini')).toBeTruthy()
 })
 
 // ── Test 2: Core spec fields pre-filled ───────────────────────────────────────

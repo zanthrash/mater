@@ -17,6 +17,8 @@ import { AIBadge } from '../components/AIBadge'
 import { PrimaryButton } from '../components/PrimaryButton'
 import { SpecRow } from '../components/SpecRow'
 import { camelToTitle, titleToCamel } from '../utils/formatting'
+import { TaxonomyPicker } from '../components/TaxonomyPicker'
+import type { TaxonomyCategoryNode } from '../services/APIClient'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -47,16 +49,7 @@ interface VinResult {
   source: 'nhtsa' | 'claude'
 }
 
-interface TaxonomyTypeNode {
-  type: string
-  subtypes: string[]
-}
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-interface TaxonomyCategoryNode {
-  category: string
-  types: TaxonomyTypeNode[]
-}
 
 export interface ReviewSubmitData {
   taxonomy: { category: string; type: string; subtype: string | null }
@@ -192,6 +185,7 @@ export function ReviewEditScreen({
   typeSpecificSpecs,
   vinResult,
   photos,
+  taxonomyTree,
   yardMetadata,
   onSubmit,
   onBack,
@@ -388,33 +382,16 @@ export function ReviewEditScreen({
         {/* Section 1: Taxonomy */}
         <SectionHeader title="Taxonomy" />
         <View style={[styles.sectionBox, { borderColor: colors.border, backgroundColor: colors.surface }]}>
-          <FieldLabel label="Category" />
-          <TextInput
-            style={inputStyle}
-            value={editedTaxonomy.category}
-            onChangeText={(text) => setEditedTaxonomy((prev) => ({ ...prev, category: text }))}
-            placeholderTextColor={colors.placeholder}
-            accessibilityLabel="Category"
-            testID="taxonomy-category"
-          />
-          <FieldLabel label="Type" />
-          <TextInput
-            style={inputStyle}
-            value={editedTaxonomy.type}
-            onChangeText={(text) => setEditedTaxonomy((prev) => ({ ...prev, type: text }))}
-            placeholderTextColor={colors.placeholder}
-            accessibilityLabel="Type"
-            testID="taxonomy-type"
-          />
-          <FieldLabel label="Subtype" />
-          <TextInput
-            style={inputStyle}
-            value={editedTaxonomy.subtype}
-            onChangeText={(text) => setEditedTaxonomy((prev) => ({ ...prev, subtype: text }))}
-            placeholder="None"
-            placeholderTextColor={colors.placeholder}
-            accessibilityLabel="Subtype"
-            testID="taxonomy-subtype"
+          <TaxonomyPicker
+            taxonomyTree={taxonomyTree}
+            value={{
+              category: editedTaxonomy.category,
+              type: editedTaxonomy.type,
+              subtype: editedTaxonomy.subtype || null,
+            }}
+            onChange={(val) =>
+              setEditedTaxonomy({ category: val.category, type: val.type, subtype: val.subtype ?? '' })
+            }
           />
         </View>
 
