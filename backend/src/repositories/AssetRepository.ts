@@ -21,6 +21,7 @@ export interface Asset {
   consignor: string | null
   photos: Array<{ url: string; label: string; type: string }>
   status: string
+  user_id: string | null
 }
 
 export type CreateAssetData = Omit<Asset, 'id' | 'created_at' | 'updated_at'>
@@ -48,6 +49,7 @@ export interface ListAssetsOptions {
   search?: string
   limit?: number
   offset?: number
+  userId?: string
 }
 
 export class NotFoundError extends Error {
@@ -111,6 +113,10 @@ export class AssetRepository {
     const offset = options.offset ?? 0
 
     let query = this.supabase.from('assets').select('*', { count: 'exact' }).neq('status', 'deleted')
+
+    if (options.userId) {
+      query = query.eq('user_id', options.userId)
+    }
 
     if (options.category !== undefined) {
       query = query.eq('category', options.category)

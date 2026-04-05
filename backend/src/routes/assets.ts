@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import { config } from '../config.js'
 import { AssetRepository, NotFoundError } from '../repositories/AssetRepository.js'
 import { PhotoStorageService } from '../services/PhotoStorageService.js'
+import { UserRepository } from '../repositories/UserRepository.js'
 
 interface PhotoInput {
   base64: string
@@ -14,6 +15,7 @@ interface PhotoInput {
 interface PostBody {
   vinSerial?: string
   operatorName?: string
+  userId?: string
   gpsLat?: number
   gpsLon?: number
   photos: PhotoInput[]
@@ -46,11 +48,13 @@ interface ListQuery {
   search?: string
   limit?: number
   offset?: number
+  userId?: string
 }
 
 export const assetsRoute: FastifyPluginAsync = async (fastify) => {
   const supabase = createClient(config.supabaseUrl, config.supabaseKey)
   const repo = new AssetRepository(supabase)
+  const userRepo = new UserRepository(supabase)
   const photoService = new PhotoStorageService(supabase)
 
   // POST /api/assets
@@ -65,6 +69,7 @@ export const assetsRoute: FastifyPluginAsync = async (fastify) => {
           properties: {
             vinSerial: { type: 'string' },
             operatorName: { type: 'string' },
+            userId: { type: 'string' },
             gpsLat: { type: 'number' },
             gpsLon: { type: 'number' },
             photos: {
@@ -102,6 +107,14 @@ export const assetsRoute: FastifyPluginAsync = async (fastify) => {
       try {
         const body = request.body
 
+        let operatorName = body.operatorName
+        if (!operatorName && body.userId) {
+          try {
+            const user = await userRepo.findById(body.userId)
+            operatorName = user.display_name
+          } catch { }
+        }
+
         // 1. Create asset without photos to get ID
         const asset = await repo.create({
           vin_serial: body.vinSerial ?? null,
@@ -121,6 +134,7 @@ export const assetsRoute: FastifyPluginAsync = async (fastify) => {
           consignor: body.yardMetadata?.consignor ?? null,
           photos: [],
           status: 'intake',
+          user_id: body.userId ?? null,
         })
 
         // 2. Upload photos using asset.id as folder
@@ -138,7 +152,7 @@ export const assetsRoute: FastifyPluginAsync = async (fastify) => {
         // 4. Create intake event
         await repo.createIntakeEvent({
           asset_id: asset.id,
-          operator_name: body.operatorName ?? null,
+          operator_name: operatorName ?? null,
           gps_lat: body.gpsLat ?? null,
           gps_lon: body.gpsLon ?? null,
           ai_analysis_result: body.aiAnalysisResult ?? null,
@@ -158,7 +172,7 @@ export const assetsRoute: FastifyPluginAsync = async (fastify) => {
   // GET /api/assets
   fastify.get<{ Querystring: ListQuery }>('/api/assets', async (request, reply) => {
     try {
-      const { category, type, make, status, search, limit, offset } = request.query
+      const { category, type, make, status, search, limit, offset, userId } = request.query
       const result = await repo.list({
         category,
         type,
@@ -167,6 +181,7 @@ export const assetsRoute: FastifyPluginAsync = async (fastify) => {
         search,
         limit: limit !== undefined ? Number(limit) : 20,
         offset: offset !== undefined ? Number(offset) : 0,
+        userId,
       })
       return reply.send(result)
     } catch (error: unknown) {

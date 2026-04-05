@@ -10,6 +10,12 @@ const mockCreateIntakeEvent = vi.fn()
 const mockFindIntakeEvents = vi.fn()
 const mockUploadPhotos = vi.fn()
 
+vi.mock('../repositories/UserRepository.js', () => ({
+  UserRepository: vi.fn(() => ({
+    findById: vi.fn(),
+  })),
+}))
+
 vi.mock('../repositories/AssetRepository.js', () => ({
   AssetRepository: vi.fn(() => ({
     create: mockCreate,
@@ -64,6 +70,7 @@ const sampleAsset = {
   consignor: null,
   photos: [],
   status: 'intake',
+  user_id: null,
 }
 
 beforeEach(() => {
