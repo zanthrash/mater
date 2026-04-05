@@ -15,9 +15,12 @@ import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Swipeable } from 'react-native-gesture-handler'
 import { useThemeColors, typography } from '../theme'
+import { useThemeContext } from '../ThemeContext'
 import { AnimatedPressableButton } from '../components/AnimatedPressable'
 import { PrimaryButton } from '../components/PrimaryButton'
 import type { Asset } from '../services/APIClient'
+
+const rbAiLogo = require('../../assets/img/rb-ai-logo-outline.png')
 
 type SortMode = 'newest' | 'oldest' | 'type'
 
@@ -157,6 +160,8 @@ function AssetCard({ item, onAssetPress, onDeleteAsset }: AssetCardProps) {
 
 export function AssetListScreen({ assets, loading, onNewIntake, onAssetPress, onSearch, onDeleteAsset }: Props) {
   const colors = useThemeColors()
+  const { resolvedScheme } = useThemeContext()
+  const isDark = resolvedScheme === 'dark'
   const insets = useSafeAreaInsets()
   const [sortMode, setSortMode] = useState<SortMode>('newest')
 
@@ -176,10 +181,11 @@ export function AssetListScreen({ assets, loading, onNewIntake, onAssetPress, on
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={[styles.header, { paddingTop: insets.top + 16, borderBottomColor: colors.borderStrong }]}>
-        <Text style={[styles.appTitle, { color: colors.title, fontFamily: typography.headingFamily }]}>
-          MATER
-        </Text>
+      <View style={[styles.header, { paddingTop: insets.top + 16, borderBottomColor: colors.borderStrong, backgroundColor: colors.background }]}>
+        <View>
+          <Image source={rbAiLogo} style={styles.appLogo} resizeMode="contain" accessibilityLabel="rb AI logo" />
+          <Text style={[styles.appSubtitle, { color: colors.secondary }]}>Asset Intake</Text>
+        </View>
         <AnimatedPressableButton
           testID="new-intake-button"
           onPress={onNewIntake}
@@ -291,8 +297,18 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
     borderBottomWidth: 1,
   },
-  appTitle: {
-    ...typography.display,
+  appLogo: {
+    height: 54,
+    width: 135,
+  },
+  appSubtitle: {
+    fontSize: 13,
+    lineHeight: 16,
+    fontFamily: typography.headingFamily,
+    letterSpacing: 2.5,
+    textTransform: 'uppercase',
+    marginTop: 2,
+    marginLeft: 14,
   },
   addButton: {
     width: 44,
