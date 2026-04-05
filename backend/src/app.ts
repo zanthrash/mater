@@ -4,6 +4,7 @@ import { healthRoute } from './routes/health.js'
 import { analyzeRoute } from './routes/analyze.js'
 import { assetsRoute } from './routes/assets.js'
 import { taxonomyRoute } from './routes/taxonomy.js'
+import { usersRoute } from './routes/users.js'
 
 export function buildApp({ logger = false }: { logger?: boolean } = {}) {
   const app = Fastify({ logger })
@@ -12,5 +13,6 @@ export function buildApp({ logger = false }: { logger?: boolean } = {}) {
   app.register(analyzeRoute)
   app.register(assetsRoute)
   app.register(taxonomyRoute)
+  app.register(usersRoute)
   return app
 }
