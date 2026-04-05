@@ -24,26 +24,33 @@ interface Props {
   value: TaxonomyValue
   onChange: (val: TaxonomyValue) => void
   isAiPopulated?: boolean
+  // External visibility control — when provided, parent controls open/close
+  visible?: boolean
+  onClose?: () => void
 }
 
 type Level = 'category' | 'type' | 'subtype'
 
-export function TaxonomyPicker({ taxonomyTree, value, onChange, isAiPopulated }: Props) {
+export function TaxonomyPicker({ taxonomyTree, value, onChange, isAiPopulated, visible: externalVisible, onClose }: Props) {
   const colors = useThemeColors()
-  const [visible, setVisible] = useState(false)
+  const [internalVisible, setInternalVisible] = useState(false)
   const [level, setLevel] = useState<Level>('category')
   const [pendingCategory, setPendingCategory] = useState<string>('')
   const [pendingType, setPendingType] = useState<string>('')
+
+  const isControlled = externalVisible !== undefined
+  const visible = isControlled ? externalVisible : internalVisible
 
   function open() {
     setLevel('category')
     setPendingCategory('')
     setPendingType('')
-    setVisible(true)
+    if (!isControlled) setInternalVisible(true)
   }
 
   function close() {
-    setVisible(false)
+    if (isControlled) onClose?.()
+    else setInternalVisible(false)
   }
 
   function selectCategory(cat: string) {
@@ -128,6 +135,7 @@ export function TaxonomyPicker({ taxonomyTree, value, onChange, isAiPopulated }:
               keyExtractor={(item) => item}
               renderItem={({ item }) => (
                 <TouchableOpacity
+                  testID={`picker-item-${item}`}
                   style={[styles.row, { borderBottomColor: colors.separator }]}
                   onPress={() => {
                     if (level === 'category') selectCategory(item)

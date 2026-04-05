@@ -57,67 +57,67 @@ it('does not show AI badge when isAiPopulated is false', () => {
 // ── Modal navigation ─────────────────────────────────────────────────────────
 
 it('opens category list on field press', () => {
-  const { getByTestId, getByText } = render(
+  const { getByTestId } = render(
     <TaxonomyPicker taxonomyTree={tree} value={baseValue} onChange={noop} />
   )
   fireEvent.press(getByTestId('taxonomy-picker-display'))
-  expect(getByText('Earthmoving')).toBeTruthy()
-  expect(getByText('Lifting')).toBeTruthy()
+  expect(getByTestId('picker-item-Earthmoving')).toBeTruthy()
+  expect(getByTestId('picker-item-Lifting')).toBeTruthy()
 })
 
 it('shows type list after selecting a category', () => {
-  const { getByTestId, getByText, queryByText } = render(
+  const { getByTestId, queryByTestId } = render(
     <TaxonomyPicker taxonomyTree={tree} value={baseValue} onChange={noop} />
   )
   fireEvent.press(getByTestId('taxonomy-picker-display'))
-  fireEvent.press(getByText('Earthmoving'))
-  expect(getByText('Excavator')).toBeTruthy()
-  expect(getByText('Bulldozer')).toBeTruthy()
-  expect(queryByText('Lifting')).toBeNull()
+  fireEvent.press(getByTestId('picker-item-Earthmoving'))
+  expect(getByTestId('picker-item-Excavator')).toBeTruthy()
+  expect(getByTestId('picker-item-Bulldozer')).toBeTruthy()
+  expect(queryByTestId('picker-item-Lifting')).toBeNull()
 })
 
 it('shows subtype list after selecting a type with subtypes', () => {
-  const { getByTestId, getByText, queryByText } = render(
+  const { getByTestId, queryByTestId } = render(
     <TaxonomyPicker taxonomyTree={tree} value={baseValue} onChange={noop} />
   )
   fireEvent.press(getByTestId('taxonomy-picker-display'))
-  fireEvent.press(getByText('Earthmoving'))
-  fireEvent.press(getByText('Excavator'))
-  expect(getByText('Mini')).toBeTruthy()
-  expect(getByText('Standard')).toBeTruthy()
-  expect(queryByText('Excavator')).toBeNull()
+  fireEvent.press(getByTestId('picker-item-Earthmoving'))
+  fireEvent.press(getByTestId('picker-item-Excavator'))
+  expect(getByTestId('picker-item-Mini')).toBeTruthy()
+  expect(getByTestId('picker-item-Standard')).toBeTruthy()
+  expect(queryByTestId('picker-item-Excavator')).toBeNull()
 })
 
 it('calls onChange with selected values and closes when subtype selected', () => {
   const onChange = jest.fn()
-  const { getByTestId, getByText, queryByTestId } = render(
+  const { getByTestId } = render(
     <TaxonomyPicker taxonomyTree={tree} value={baseValue} onChange={onChange} />
   )
   fireEvent.press(getByTestId('taxonomy-picker-display'))
-  fireEvent.press(getByText('Earthmoving'))
-  fireEvent.press(getByText('Excavator'))
-  fireEvent.press(getByText('Standard'))
+  fireEvent.press(getByTestId('picker-item-Earthmoving'))
+  fireEvent.press(getByTestId('picker-item-Excavator'))
+  fireEvent.press(getByTestId('picker-item-Standard'))
   expect(onChange).toHaveBeenCalledWith({ category: 'Earthmoving', type: 'Excavator', subtype: 'Standard' })
 })
 
 it('calls onChange with null subtype and closes when type has no subtypes', () => {
   const onChange = jest.fn()
-  const { getByTestId, getByText } = render(
+  const { getByTestId } = render(
     <TaxonomyPicker taxonomyTree={tree} value={baseValue} onChange={onChange} />
   )
   fireEvent.press(getByTestId('taxonomy-picker-display'))
-  fireEvent.press(getByText('Earthmoving'))
-  fireEvent.press(getByText('Bulldozer'))
+  fireEvent.press(getByTestId('picker-item-Earthmoving'))
+  fireEvent.press(getByTestId('picker-item-Bulldozer'))
   expect(onChange).toHaveBeenCalledWith({ category: 'Earthmoving', type: 'Bulldozer', subtype: null })
 })
 
 it('navigates back to category list from type list', () => {
-  const { getByTestId, getByText, queryByText } = render(
+  const { getByTestId, queryByTestId } = render(
     <TaxonomyPicker taxonomyTree={tree} value={baseValue} onChange={noop} />
   )
   fireEvent.press(getByTestId('taxonomy-picker-display'))
-  fireEvent.press(getByText('Earthmoving'))
-  expect(queryByText('Lifting')).toBeNull()
+  fireEvent.press(getByTestId('picker-item-Earthmoving'))
+  expect(queryByTestId('picker-item-Lifting')).toBeNull()
   fireEvent.press(getByTestId('picker-back-button'))
-  expect(getByText('Lifting')).toBeTruthy()
+  expect(getByTestId('picker-item-Lifting')).toBeTruthy()
 })
