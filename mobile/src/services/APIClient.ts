@@ -81,6 +81,13 @@ export interface IntakeEvent {
   source_photos: Array<{ url: string; label: string }> | null
 }
 
+export interface User {
+  id: string
+  email: string
+  display_name: string
+  created_at: string
+}
+
 export interface CreateAssetRequest {
   vinSerial?: string
   operatorName?: string
@@ -94,6 +101,7 @@ export interface CreateAssetRequest {
   aiAnalysisResult?: Record<string, unknown> | null
   vinLookupResult?: Record<string, unknown> | null
   aiTaxonomyResult?: Record<string, unknown> | null
+  userId?: string
 }
 
 export interface AssetListResponse {
@@ -166,6 +174,18 @@ export class APIClient {
     }
   }
 
+  async loginUser(email: string): Promise<User> {
+    try {
+      const { data } = await this.http.post<{ user: User }>('/api/users/login', { email })
+      return data.user
+    } catch (error) {
+      const err = error as import('axios').AxiosError
+      const data = err.response?.data as { message?: string; error?: string } | undefined
+      const message = data?.message ?? data?.error ?? err.message
+      throw { message, source: 'backend' as const } as ServiceError
+    }
+  }
+
   async createAsset(request: CreateAssetRequest): Promise<{ asset: Asset }> {
     try {
       const response = await this.http.post<{ asset: Asset }>('/api/assets', request)
@@ -190,7 +210,7 @@ export class APIClient {
     }
   }
 
-  async listAssets(params?: { category?: string; type?: string; make?: string; status?: string; search?: string; limit?: number; offset?: number }): Promise<AssetListResponse> {
+  async listAssets(params?: { category?: string; type?: string; make?: string; status?: string; search?: string; limit?: number; offset?: number; userId?: string }): Promise<AssetListResponse> {
     try {
       const response = await this.http.get<AssetListResponse>('/api/assets', { params })
       return response.data
