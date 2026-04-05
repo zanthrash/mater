@@ -215,6 +215,8 @@ function AppContent() {
           navigate('asset-detail')
         }}
         onSearch={(query) => loadAssets(query)}
+        onLogout={logout}
+        userName={user.display_name}
         onDeleteAsset={async (id) => {
           setAssets((prev) => prev.filter((a) => a.id !== id))
           try {

@@ -8,6 +8,7 @@ import {
   Image,
   ActivityIndicator,
   TouchableOpacity,
+  Pressable,
   Alert,
   ScrollView,
 } from 'react-native'
@@ -16,6 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Swipeable } from 'react-native-gesture-handler'
 import { useThemeColors, typography } from '../theme'
 import { useThemeContext } from '../ThemeContext'
+import { useUserContext } from '../UserContext'
 import { AnimatedPressableButton } from '../components/AnimatedPressable'
 import { PrimaryButton } from '../components/PrimaryButton'
 import type { Asset } from '../services/APIClient'
@@ -49,6 +51,8 @@ interface Props {
   onAssetPress: (id: string) => void
   onSearch: (query: string) => void
   onDeleteAsset: (id: string) => void
+  onLogout: () => void
+  userName: string
 }
 
 function formatDate(isoString: string): string {
@@ -158,12 +162,14 @@ function AssetCard({ item, onAssetPress, onDeleteAsset }: AssetCardProps) {
   )
 }
 
-export function AssetListScreen({ assets, loading, onNewIntake, onAssetPress, onSearch, onDeleteAsset }: Props) {
+export function AssetListScreen({ assets, loading, onNewIntake, onAssetPress, onSearch, onDeleteAsset, onLogout, userName }: Props) {
   const colors = useThemeColors()
   const { resolvedScheme } = useThemeContext()
   const isDark = resolvedScheme === 'dark'
   const insets = useSafeAreaInsets()
+  const { user } = useUserContext()
   const [sortMode, setSortMode] = useState<SortMode>('newest')
+  const [filterMine, setFilterMine] = useState(false)
 
   const sortedAssets = useMemo(() => {
     const copy = [...assets]
@@ -178,6 +184,10 @@ export function AssetListScreen({ assets, loading, onNewIntake, onAssetPress, on
     }
     return copy
   }, [assets, sortMode])
+
+  const displayedAssets = filterMine && user
+    ? sortedAssets.filter(a => (a as any).user_id === user.id)
+    : sortedAssets
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -194,6 +204,15 @@ export function AssetListScreen({ assets, loading, onNewIntake, onAssetPress, on
         >
           <Ionicons name="add" size={24} color={colors.onPrimary} />
         </AnimatedPressableButton>
+      </View>
+
+      <View style={[styles.userBar, { borderBottomColor: colors.border }]}>
+        <Text style={[typography.bodySmall, { color: colors.secondary }]}>
+          {userName}
+        </Text>
+        <Pressable onPress={onLogout} hitSlop={12}>
+          <Text style={[typography.bodySmall, { color: colors.primary }]}>Log out</Text>
+        </Pressable>
       </View>
 
       <View style={[styles.searchWrapper, { borderBottomColor: colors.border }]}>
@@ -250,11 +269,26 @@ export function AssetListScreen({ assets, loading, onNewIntake, onAssetPress, on
             </TouchableOpacity>
           )
         })}
+        <Pressable
+          onPress={() => setFilterMine(f => !f)}
+          style={[
+            styles.filterChip,
+            {
+              backgroundColor: filterMine ? colors.primary : colors.surface,
+              borderColor: colors.inputBorder,
+            },
+          ]}
+          hitSlop={8}
+        >
+          <Text style={[typography.bodySmall, { color: filterMine ? colors.onPrimary : colors.secondary }]}>
+            My Assets
+          </Text>
+        </Pressable>
       </ScrollView>
 
       {loading ? (
         <ActivityIndicator testID="activity-indicator" style={styles.indicator} size="large" color={colors.primary} />
-      ) : sortedAssets.length === 0 ? (
+      ) : displayedAssets.length === 0 ? (
         <View style={styles.emptyState}>
           <Ionicons name="construct-outline" size={64} color={colors.placeholder} style={styles.emptyIcon} />
           <Text style={[styles.emptyHeading, { color: colors.heading, fontFamily: typography.headingFamily }]}>
@@ -273,7 +307,7 @@ export function AssetListScreen({ assets, loading, onNewIntake, onAssetPress, on
         </View>
       ) : (
         <FlatList
-          data={sortedAssets}
+          data={displayedAssets}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <AssetCard item={item} onAssetPress={onAssetPress} onDeleteAsset={onDeleteAsset} />
@@ -350,6 +384,21 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 20,
     borderWidth: 1,
+  },
+  filterChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+    marginLeft: 8,
+  },
+  userBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   sortChipText: {
     fontSize: 13,
