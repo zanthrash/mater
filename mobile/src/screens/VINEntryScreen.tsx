@@ -73,7 +73,7 @@ export function VINEntryScreen({ client = new APIClient(), onContinue, onBack, o
         onBack={onBack}
         showMenu
         onRestart={onRestart}
-        stepInfo={{ current: 2, total: 5 }}
+        stepInfo={{ current: 2, total: 6 }}
       />
       <View style={styles.container}>
         <FormInput

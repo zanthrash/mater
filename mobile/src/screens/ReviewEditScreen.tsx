@@ -362,7 +362,7 @@ export function ReviewEditScreen({
         onBack={onBack}
         showMenu
         onRestart={onRestart}
-        stepInfo={{ current: 4, total: 5 }}
+        stepInfo={{ current: 5, total: 6 }}
       />
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
 

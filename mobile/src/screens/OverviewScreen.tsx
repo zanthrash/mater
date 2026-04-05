@@ -43,7 +43,7 @@ export function OverviewScreen({ initialPhoto, onPhotoChange, onContinue, onBack
         showBack
         onBack={onBack}
         showMenu
-        stepInfo={{ current: 1, total: 5 }}
+        stepInfo={{ current: 1, total: 6 }}
       />
       <View style={styles.container}>
         <Text style={[styles.instruction, { color: colors.secondary, fontFamily: typography.bodyFamily }]}>

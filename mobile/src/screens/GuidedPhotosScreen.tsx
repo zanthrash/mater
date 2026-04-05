@@ -182,7 +182,7 @@ export function GuidedPhotosScreen({
         onBack={onBack}
         showMenu
         onRestart={onRestart}
-        stepInfo={{ current: 3, total: 5 }}
+        stepInfo={{ current: 4, total: 6 }}
       />
 
       <ScrollView
