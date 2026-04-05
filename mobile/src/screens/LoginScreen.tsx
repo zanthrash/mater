@@ -4,7 +4,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useThemeColors, typography } from '../theme'
 import { FormInput } from '../components/FormInput'
 import { PrimaryButton } from '../components/PrimaryButton'
-import { useThemeContext } from '../ThemeContext'
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -14,7 +13,6 @@ interface Props {
 
 export function LoginScreen({ onLogin }: Props) {
   const colors = useThemeColors()
-  const { resolvedScheme } = useThemeContext()
   const insets = useSafeAreaInsets()
   const [email, setEmail] = useState('')
   const [error, setError] = useState('')
@@ -36,10 +34,7 @@ export function LoginScreen({ onLogin }: Props) {
     }
   }
 
-  const logo =
-    resolvedScheme === 'dark'
-      ? require('../../../assets/img/rb-ai-logo-dark-mode.png')
-      : require('../../../assets/img/rb-ai-logo.png')
+  const logo = require('../../assets/img/rb-ai-logo-outline.png')
 
   return (
     <KeyboardAvoidingView
@@ -49,7 +44,7 @@ export function LoginScreen({ onLogin }: Props) {
       <View style={styles.content}>
         <Image source={logo} style={styles.logo} resizeMode="contain" accessibilityLabel="rb AI logo" />
         <Text style={[typography.title, { color: colors.heading, marginTop: 24, textAlign: 'center' }]}>
-          Welcome to Mater
+          ASSSET INTAKE
         </Text>
         <Text style={[typography.body, { color: colors.secondary, marginTop: 8, textAlign: 'center' }]}>
           Enter your email to get started
