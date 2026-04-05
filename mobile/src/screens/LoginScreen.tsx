@@ -38,8 +38,8 @@ export function LoginScreen({ onLogin }: Props) {
 
   const logo =
     resolvedScheme === 'dark'
-      ? require('../../assets/img/rb-ai-logo-dark-mode.png')
-      : require('../../assets/img/rb-ai-logo.png')
+      ? require('../../../assets/img/rb-ai-logo-dark-mode.png')
+      : require('../../../assets/img/rb-ai-logo.png')
 
   return (
     <KeyboardAvoidingView
