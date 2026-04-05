@@ -52,6 +52,7 @@ interface Props {
   onSearch: (query: string) => void
   onDeleteAsset: (id: string) => void
   onLogout: () => void
+  onUserFilter: (userId?: string) => void
   userName: string
 }
 
@@ -162,7 +163,7 @@ function AssetCard({ item, onAssetPress, onDeleteAsset }: AssetCardProps) {
   )
 }
 
-export function AssetListScreen({ assets, loading, onNewIntake, onAssetPress, onSearch, onDeleteAsset, onLogout, userName }: Props) {
+export function AssetListScreen({ assets, loading, onNewIntake, onAssetPress, onSearch, onDeleteAsset, onLogout, onUserFilter, userName }: Props) {
   const colors = useThemeColors()
   const { resolvedScheme } = useThemeContext()
   const isDark = resolvedScheme === 'dark'
@@ -184,10 +185,6 @@ export function AssetListScreen({ assets, loading, onNewIntake, onAssetPress, on
     }
     return copy
   }, [assets, sortMode])
-
-  const displayedAssets = filterMine && user
-    ? sortedAssets.filter(a => (a as any).user_id === user.id)
-    : sortedAssets
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -270,7 +267,11 @@ export function AssetListScreen({ assets, loading, onNewIntake, onAssetPress, on
           )
         })}
         <Pressable
-          onPress={() => setFilterMine(f => !f)}
+          onPress={() => {
+            const next = !filterMine
+            setFilterMine(next)
+            onUserFilter(next && user ? user.id : undefined)
+          }}
           style={[
             styles.filterChip,
             {
@@ -288,7 +289,7 @@ export function AssetListScreen({ assets, loading, onNewIntake, onAssetPress, on
 
       {loading ? (
         <ActivityIndicator testID="activity-indicator" style={styles.indicator} size="large" color={colors.primary} />
-      ) : displayedAssets.length === 0 ? (
+      ) : assets.length === 0 ? (
         <View style={styles.emptyState}>
           <Ionicons name="construct-outline" size={64} color={colors.placeholder} style={styles.emptyIcon} />
           <Text style={[styles.emptyHeading, { color: colors.heading, fontFamily: typography.headingFamily }]}>
@@ -307,7 +308,7 @@ export function AssetListScreen({ assets, loading, onNewIntake, onAssetPress, on
         </View>
       ) : (
         <FlatList
-          data={displayedAssets}
+          data={sortedAssets}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <AssetCard item={item} onAssetPress={onAssetPress} onDeleteAsset={onDeleteAsset} />

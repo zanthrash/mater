@@ -62,16 +62,23 @@ function AppContent() {
     checkForDraft()
   }, [])
 
-  async function loadAssets(search?: string) {
+  async function loadAssets(search?: string, userId?: string) {
     setAssetsLoading(true)
     try {
-      const result = await client.listAssets(search ? { search } : undefined)
+      const params: Record<string, string> = {}
+      if (search) params.search = search
+      if (userId) params.userId = userId
+      const result = await client.listAssets(Object.keys(params).length ? params : undefined)
       setAssets(result.data)
     } catch {
       // silently fail
     } finally {
       setAssetsLoading(false)
     }
+  }
+
+  function handleUserFilter(userId?: string) {
+    loadAssets(undefined, userId)
   }
 
   async function loadTaxonomy() {
@@ -215,6 +222,7 @@ function AppContent() {
           navigate('asset-detail')
         }}
         onSearch={(query) => loadAssets(query)}
+        onUserFilter={handleUserFilter}
         onLogout={logout}
         userName={user.display_name}
         onDeleteAsset={async (id) => {

@@ -66,6 +66,7 @@ export interface Asset {
   consignor: string | null
   photos: Array<{ url: string; label: string; type: 'guided' | 'extra' }>
   status: string
+  user_id: string | null
 }
 
 export interface IntakeEvent {
