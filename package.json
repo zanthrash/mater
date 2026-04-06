@@ -4,7 +4,8 @@
   "private": true,
   "workspaces": [
     "mobile",
-    "backend"
+    "backend",
+    "dashboard"
   ],
   "engines": {
     "node": ">=20"
@@ -16,9 +17,11 @@
   "scripts": {
     "dev:backend": "npm run dev --workspace=backend",
     "dev:mobile": "npm run start --workspace=mobile",
+    "dev:dashboard": "npm run dev --workspace=dashboard",
     "test:backend": "npm run test --workspace=backend",
     "test:mobile": "npm run test --workspace=mobile",
-    "test": "npm run test:backend && npm run test:mobile"
+    "test:dashboard": "npm run test --workspace=dashboard",
+    "test": "npm run test:backend && npm run test:mobile && npm run test:dashboard"
   },
   "devDependencies": {
     "@types/react": "~19.1.10"
