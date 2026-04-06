@@ -11,7 +11,6 @@ import {
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { CameraView, useCameraPermissions } from 'expo-camera'
-import * as ScreenOrientation from 'expo-screen-orientation'
 import { PhotoCaptureModule } from '../modules/PhotoCaptureModule'
 import { typography } from '../theme'
 
@@ -22,11 +21,12 @@ export interface CameraViewfinderProps {
   onCapture: (base64: string) => void
   onCancel: () => void
   label?: string
+  onViewStateChange?: (state: 'camera' | 'preview') => void
 }
 
 type ViewState = 'requesting-permission' | 'no-permission' | 'camera' | 'preview'
 
-export function CameraViewfinder({ onCapture, onCancel, label }: CameraViewfinderProps) {
+export function CameraViewfinder({ onCapture, onCancel, label, onViewStateChange }: CameraViewfinderProps) {
   const { width, height } = useWindowDimensions()
   const isLandscape = width > height
   const [permission, requestPermission] = useCameraPermissions()
@@ -34,13 +34,6 @@ export function CameraViewfinder({ onCapture, onCancel, label }: CameraViewfinde
   const [capturedUri, setCapturedUri] = useState<string | null>(null)
   const [processing, setProcessing] = useState(false)
   const cameraRef = useRef<CameraView>(null)
-
-  useEffect(() => {
-    ScreenOrientation.unlockAsync()
-    return () => {
-      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP)
-    }
-  }, [])
 
   const getViewState = (): ViewState => {
     if (!permission) return 'requesting-permission'
@@ -60,11 +53,13 @@ export function CameraViewfinder({ onCapture, onCancel, label }: CameraViewfinde
     const photo = await cameraRef.current.takePictureAsync()
     if (photo) {
       setCapturedUri(photo.uri)
+      onViewStateChange?.('preview')
     }
   }
 
   const handleRetake = () => {
     setCapturedUri(null)
+    onViewStateChange?.('camera')
   }
 
   const handleUsePhoto = async () => {

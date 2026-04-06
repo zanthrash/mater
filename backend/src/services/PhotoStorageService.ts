@@ -18,7 +18,11 @@ export class PhotoStorageService {
 
     for (const photo of photos) {
       const timestamp = Date.now()
-      const path = `${inspectionId}/${photo.type}-${timestamp}.jpg`
+      const safeType = photo.type
+        .replace(/[^a-zA-Z0-9_-]/g, '_')
+        .replace(/_+/g, '_')
+        .replace(/^_|_$/g, '')
+      const path = `${inspectionId}/${safeType}-${timestamp}.jpg`
       const buffer = Buffer.from(photo.base64, 'base64')
 
       const { error } = await this.supabase.storage

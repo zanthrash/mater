@@ -4,9 +4,11 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
+  useWindowDimensions,
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import * as ScreenOrientation from 'expo-screen-orientation'
 import { CameraViewfinder } from '../components/CameraViewfinder'
 import { PrimaryButton } from '../components/PrimaryButton'
 import { useThemeColors, typography } from '../theme'
@@ -58,6 +60,15 @@ export function CaptureFlowScreen({
 }: CaptureFlowScreenProps) {
   const colors = useThemeColors()
   const insets = useSafeAreaInsets()
+  const { width, height } = useWindowDimensions()
+  const isLandscape = width > height
+
+  useEffect(() => {
+    ScreenOrientation.unlockAsync()
+    return () => {
+      ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP)
+    }
+  }, [])
 
   // Queue is intentionally frozen at mount — it represents the items to capture
   // in this flow session. Changes to props during the flow are not expected.
@@ -67,6 +78,7 @@ export function CaptureFlowScreen({
   const [currentIndex, setCurrentIndex] = useState(0)
   const [flowState, setFlowState] = useState<FlowState>('camera')
   const [lastCapturedLabel, setLastCapturedLabel] = useState<string | null>(null)
+  const [viewfinderState, setViewfinderState] = useState<'camera' | 'preview'>('camera')
 
   const currentLabel = queue[currentIndex] ?? null
 
@@ -88,6 +100,7 @@ export function CaptureFlowScreen({
       onComplete()
     } else {
       setCurrentIndex(nextIndex)
+      setViewfinderState('camera')
       setFlowState('interstitial')
     }
   }
@@ -129,26 +142,29 @@ export function CaptureFlowScreen({
           onCapture={handlePhotoCapture}
           onCancel={onExit}
           label={currentLabel ?? undefined}
+          onViewStateChange={setViewfinderState}
         />
-        <View style={[styles.progressStrip, { bottom: 155 + insets.bottom }]}>
-          <TouchableOpacity
-            onPress={handleSkipFromCamera}
-            style={styles.stripButton}
-            testID="flow-skip-button"
-          >
-            <Text style={styles.stripButtonText}>Skip</Text>
-          </TouchableOpacity>
-          <Text style={styles.progressText}>
-            {checklistPosition ?? '?'}/{checklist.length}
-          </Text>
-          <TouchableOpacity
-            onPress={onExit}
-            style={styles.stripButton}
-            testID="flow-list-button"
-          >
-            <Ionicons name="list" size={22} color="#fff" />
-          </TouchableOpacity>
-        </View>
+        {viewfinderState === 'camera' && (
+          <View style={[styles.progressStrip, { bottom: isLandscape ? insets.bottom : 155 + insets.bottom }]}>
+            <TouchableOpacity
+              onPress={handleSkipFromCamera}
+              style={styles.stripButton}
+              testID="flow-skip-button"
+            >
+              <Text style={styles.stripButtonText}>Skip</Text>
+            </TouchableOpacity>
+            <Text style={styles.progressText}>
+              {checklistPosition ?? '?'}/{checklist.length}
+            </Text>
+            <TouchableOpacity
+              onPress={onExit}
+              style={styles.stripButton}
+              testID="flow-list-button"
+            >
+              <Ionicons name="list" size={22} color="#fff" />
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
     )
   }
@@ -156,13 +172,27 @@ export function CaptureFlowScreen({
   // Interstitial state
   return (
     <View
-      style={[styles.interstitialContainer, { backgroundColor: colors.background }]}
+      style={[
+        styles.interstitialContainer,
+        { backgroundColor: colors.background },
+        isLandscape && { paddingTop: insets.top },
+      ]}
       testID="capture-flow-interstitial"
     >
-      <View style={styles.interstitialContent}>
+      <View style={[
+        styles.interstitialContent,
+        isLandscape && {
+          gap: 16,
+          paddingHorizontal: Math.max(24, insets.left + 16),
+        },
+      ]}>
         <View style={styles.confirmedRow}>
-          <Ionicons name="checkmark-circle" size={32} color={colors.success} />
-          <Text style={[styles.confirmedText, { color: colors.success, fontFamily: typography.bodyFamily }]}>
+          <Ionicons name="checkmark-circle" size={isLandscape ? 24 : 32} color={colors.success} />
+          <Text style={[
+            styles.confirmedText,
+            { color: colors.success, fontFamily: typography.bodyFamily },
+            isLandscape && { fontSize: 17, lineHeight: 22 },
+          ]}>
             {lastCapturedLabel} — saved
           </Text>
         </View>
@@ -173,7 +203,11 @@ export function CaptureFlowScreen({
           <Text style={[styles.nextLabel, { color: colors.secondary, fontFamily: typography.bodyFamily }]}>
             NEXT
           </Text>
-          <Text style={[styles.nextItem, { color: colors.label, fontFamily: typography.headingFamily }]}>
+          <Text style={[
+            styles.nextItem,
+            { color: colors.label, fontFamily: typography.headingFamily },
+            isLandscape && { fontSize: 24, lineHeight: 30 },
+          ]}>
             {currentLabel}
           </Text>
           <Text style={[styles.positionText, { color: colors.secondary, fontFamily: typography.bodyFamily }]}>
@@ -187,7 +221,9 @@ export function CaptureFlowScreen({
           styles.interstitialFooter,
           {
             borderTopColor: colors.border,
-            paddingBottom: insets.bottom > 0 ? insets.bottom : 24,
+            paddingBottom: isLandscape ? 12 : (insets.bottom > 0 ? insets.bottom : 24),
+            paddingLeft: Math.max(16, insets.left),
+            paddingRight: Math.max(16, insets.right),
           },
         ]}
       >
@@ -283,7 +319,6 @@ const styles = StyleSheet.create({
   },
   interstitialFooter: {
     flexDirection: 'row',
-    paddingHorizontal: 16,
     paddingTop: 12,
     gap: 12,
     borderTopWidth: StyleSheet.hairlineWidth,
