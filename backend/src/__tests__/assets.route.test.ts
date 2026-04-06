@@ -189,6 +189,78 @@ describe('PUT /api/assets/:id', () => {
   })
 })
 
+describe('POST /api/assets — auto-flagging', () => {
+  const basePhotos = [{ base64: 'abc', label: 'Front', type: 'guided' }]
+  const baseBody = { photos: basePhotos }
+
+  beforeEach(() => {
+    mockCreate.mockResolvedValue({ ...sampleAsset, id: 'flag-test-1', status: 'intake' })
+    mockUploadPhotos.mockResolvedValue([{ url: 'https://example.com/photo.jpg' }])
+    mockUpdate.mockImplementation((_id: string, data: Record<string, unknown>) =>
+      Promise.resolve({ ...sampleAsset, id: 'flag-test-1', ...data })
+    )
+    mockCreateIntakeEvent.mockResolvedValue({ id: 'evt-1' })
+  })
+
+  it('flags needs_review when AI confidence < 0.70', async () => {
+    const app = buildTestApp()
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/assets',
+      payload: {
+        ...baseBody,
+        coreSpecs: { make: 'CAT', model: '320', year: 2020 },
+        aiTaxonomyResult: { taxonomy: { confidence: 0.55 } },
+      },
+    })
+    expect(response.statusCode).toBe(201)
+    // update is called twice: once for photos, once for status
+    const statusUpdateCall = mockUpdate.mock.calls.find(
+      (call: unknown[]) => (call[1] as Record<string, unknown>).status === 'needs_review'
+    )
+    expect(statusUpdateCall).toBeDefined()
+    await app.close()
+  })
+
+  it('flags needs_review when make/model/year missing', async () => {
+    const app = buildTestApp()
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/assets',
+      payload: {
+        ...baseBody,
+        coreSpecs: { make: 'CAT' },
+        aiTaxonomyResult: { taxonomy: { confidence: 0.90 } },
+      },
+    })
+    expect(response.statusCode).toBe(201)
+    const statusUpdateCall = mockUpdate.mock.calls.find(
+      (call: unknown[]) => (call[1] as Record<string, unknown>).status === 'needs_review'
+    )
+    expect(statusUpdateCall).toBeDefined()
+    await app.close()
+  })
+
+  it('keeps intake status when confidence >= 0.70 and specs present', async () => {
+    const app = buildTestApp()
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/assets',
+      payload: {
+        ...baseBody,
+        coreSpecs: { make: 'CAT', model: '320', year: 2020 },
+        aiTaxonomyResult: { taxonomy: { confidence: 0.85 } },
+      },
+    })
+    expect(response.statusCode).toBe(201)
+    const statusUpdateCall = mockUpdate.mock.calls.find(
+      (call: unknown[]) => (call[1] as Record<string, unknown>).status === 'needs_review'
+    )
+    expect(statusUpdateCall).toBeUndefined()
+    await app.close()
+  })
+})
+
 describe('GET /api/assets/:id/intake-events', () => {
   it('returns 200 with events array', async () => {
     mockFindIntakeEvents.mockResolvedValue([])

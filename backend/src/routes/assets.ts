@@ -161,7 +161,27 @@ export const assetsRoute: FastifyPluginAsync = async (fastify) => {
           source_photos: storedPhotos.map((p) => ({ url: p.url, label: p.label })),
         })
 
-        return reply.status(201).send({ asset: updatedAsset })
+        // 5. Auto-flag for review if quality thresholds not met
+        const confidence = (body.aiTaxonomyResult as Record<string, unknown> | null)
+          ?.taxonomy as Record<string, unknown> | undefined
+        const confidenceScore = typeof confidence?.confidence === 'number'
+          ? confidence.confidence
+          : null
+
+        const needsReview =
+          (confidenceScore !== null && confidenceScore < 0.70) ||
+          !body.coreSpecs?.make ||
+          !body.coreSpecs?.model ||
+          !body.coreSpecs?.year
+
+        if (needsReview) {
+          await repo.update(asset.id, { status: 'needs_review' })
+        }
+
+        const finalAsset = needsReview
+          ? { ...updatedAsset, status: 'needs_review' }
+          : updatedAsset
+        return reply.status(201).send({ asset: finalAsset })
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : 'Unknown error'
         return reply.status(500).send({ error: message })
