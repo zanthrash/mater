@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react'
-import { View, Text, StyleSheet, ScrollView, Image, Animated } from 'react-native'
+import React, { useState } from 'react'
+import { View, Text, StyleSheet, ScrollView, Image } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { CameraViewfinder } from '../components/CameraViewfinder'
@@ -72,7 +72,6 @@ function groupChecklist(items: string[]): Array<{ label: string; items: string[]
   }
   return result
 }
-
 
 export function GuidedPhotosScreen({
   photoChecklist,
