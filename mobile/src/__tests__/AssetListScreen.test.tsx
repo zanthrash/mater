@@ -39,9 +39,9 @@ const defaultProps = {
   onDeleteAsset: jest.fn(),
 }
 
-it('shows "+" button and "Mater" title', () => {
+it('shows "+" button and "Asset Intake" title', () => {
   const { getByText, getByTestId } = render(<AssetListScreen {...defaultProps} />)
-  expect(getByText('Mater')).toBeTruthy()
+  expect(getByText('Asset Intake')).toBeTruthy()
   expect(getByTestId('new-intake-button')).toBeTruthy()
 })
 
@@ -49,7 +49,7 @@ it('shows empty state when assets=[] and loading=false', () => {
   const { getByText, getByTestId } = render(
     <AssetListScreen {...defaultProps} assets={[]} loading={false} />
   )
-  expect(getByText('No assets ingested yet')).toBeTruthy()
+  expect(getByText('No Assets Yet')).toBeTruthy()
   expect(getByTestId('first-asset-button')).toBeTruthy()
 })
 

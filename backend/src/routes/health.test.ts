@@ -1,5 +1,7 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { buildApp } from '../app.js'
+
+vi.mock('@supabase/supabase-js', () => ({ createClient: vi.fn(() => ({})) }))
 
 describe('GET /health', () => {
   it('returns { status: "ok" } with 200', async () => {

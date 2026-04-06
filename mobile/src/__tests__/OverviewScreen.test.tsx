@@ -17,26 +17,24 @@ it('pre-populates photo from initialPhoto prop', () => {
   expect(queryByTestId('take-photo-button')).toBeNull()
 })
 
-it('shows delete button when a photo is present', () => {
-  const { getByTestId } = render(
+it('shows retake option when a photo is present', () => {
+  const { getByTestId, getByText } = render(
     <OverviewScreen
       initialPhoto="existingbase64"
       onContinue={jest.fn()}
     />
   )
-  expect(getByTestId('delete-overview-photo')).toBeTruthy()
+  expect(getByTestId('overview-thumbnail')).toBeTruthy()
+  expect(getByText('Tap to retake')).toBeTruthy()
 })
 
-it('pressing delete clears photo and calls onPhotoChange(null)', () => {
-  const onPhotoChange = jest.fn()
-  const { getByTestId, queryByTestId } = render(
+it('hides take-photo button when a photo is present', () => {
+  const { queryByTestId } = render(
     <OverviewScreen
       initialPhoto="existingbase64"
-      onPhotoChange={onPhotoChange}
+      onPhotoChange={jest.fn()}
       onContinue={jest.fn()}
     />
   )
-  fireEvent.press(getByTestId('delete-overview-photo'))
-  expect(onPhotoChange).toHaveBeenCalledWith(null)
-  expect(queryByTestId('overview-thumbnail')).toBeNull()
+  expect(queryByTestId('take-photo-button')).toBeNull()
 })

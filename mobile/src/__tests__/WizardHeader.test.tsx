@@ -41,10 +41,12 @@ describe('WizardHeader', () => {
   it('pressing menu button shows restart confirmation alert', () => {
     const onRestart = jest.fn()
     const alertSpy = jest.spyOn(Alert, 'alert')
-    const { getByTestId } = render(
+    const { getByTestId, getByText } = render(
       <SafeAreaProvider><WizardHeader title="Test" showMenu onRestart={onRestart} /></SafeAreaProvider>
     )
-    fireEvent.press(getByTestId('header-menu-button'))
+    fireEvent.press(getByTestId('header-menu-button'), { nativeEvent: { pageY: 100 } })
+    // Dropdown menu now appears — press "Restart Intake" item to trigger the alert
+    fireEvent.press(getByText('Restart Intake'))
     expect(alertSpy).toHaveBeenCalledWith(
       'Restart Intake',
       'Discard current progress and start over?',

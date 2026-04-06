@@ -22,6 +22,7 @@ const mockUpdate = vi.fn(() => ({ eq: mockUpdateEq }))
 function makeListQueryBuilder(resolveValue: { data: unknown; error: unknown; count: number | null }) {
   const builder: Record<string, unknown> = {}
   const chain = () => builder
+  builder.neq = vi.fn(chain)
   builder.eq = vi.fn(chain)
   builder.or = vi.fn(chain)
   builder.order = vi.fn(chain)

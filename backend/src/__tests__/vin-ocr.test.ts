@@ -2,6 +2,8 @@ import { describe, it, expect, vi } from 'vitest'
 import { ImageAnalysisService, VinExtractionError } from '../services/ImageAnalysisService.js'
 import { buildApp } from '../app.js'
 
+vi.mock('@supabase/supabase-js', () => ({ createClient: vi.fn(() => ({})) }))
+
 function makeAnthropicMock(responseText: string) {
   const create = vi.fn().mockResolvedValue({
     content: [{ type: 'text', text: responseText }],

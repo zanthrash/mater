@@ -93,11 +93,11 @@ describe('CameraViewfinder', () => {
       { granted: true },
       requestPermission,
     ])
-    const { getByTestId, getByText } = render(
+    const { getByTestId } = render(
       <CameraViewfinder onCapture={onCapture} onCancel={onCancel} />
     )
     expect(getByTestId('camera')).toBeTruthy()
-    expect(getByText('Flash: Off')).toBeTruthy()
+    expect(getByTestId('camera-view')).toBeTruthy()
   })
 
   it('toggles flash on/off', () => {
@@ -105,14 +105,19 @@ describe('CameraViewfinder', () => {
       { granted: true },
       requestPermission,
     ])
-    const { getByText } = render(
+    const { getByTestId, UNSAFE_getAllByType } = render(
       <CameraViewfinder onCapture={onCapture} onCancel={onCancel} />
     )
-    expect(getByText('Flash: Off')).toBeTruthy()
-    fireEvent.press(getByText('Flash: Off'))
-    expect(getByText('Flash: On')).toBeTruthy()
-    fireEvent.press(getByText('Flash: On'))
-    expect(getByText('Flash: Off')).toBeTruthy()
+    const { TouchableOpacity } = require('react-native')
+    // flash button is the second TouchableOpacity (after Cancel, before capture-button)
+    const touchables = UNSAFE_getAllByType(TouchableOpacity)
+    const flashButton = touchables.find(
+      (t: any) => t !== getByTestId('capture-button') && t.props.children?.props?.name?.startsWith('flash')
+    )
+    expect(flashButton).toBeTruthy()
+    fireEvent.press(flashButton)
+    // After press, icon should switch from flash-off to flash (on)
+    expect(flashButton.props.children?.props?.name).toBe('flash')
   })
 
   it('shows preview with Retake and Use Photo after capture', async () => {
