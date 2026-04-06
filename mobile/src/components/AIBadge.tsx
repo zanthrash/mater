@@ -8,7 +8,7 @@ export function AIBadge() {
 
   return (
     <View style={[styles.badge, { backgroundColor: colors.aiBadgeBg }]}>
-      <Ionicons name="sparkles" size={10} color={colors.aiAccent} />
+      <Ionicons name="sparkles" size={12} color={colors.aiAccent} />
       <Text style={[styles.text, { color: colors.aiBadgeText, fontFamily: typography.bodyFamily }]}>
         AI
       </Text>

@@ -337,8 +337,8 @@ const styles = StyleSheet.create({
     width: 135,
   },
   appSubtitle: {
-    fontSize: 13,
-    lineHeight: 16,
+    fontSize: 14,
+    lineHeight: 18,
     fontFamily: typography.headingFamily,
     letterSpacing: 2.5,
     textTransform: 'uppercase',
@@ -402,7 +402,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   sortChipText: {
-    fontSize: 13,
+    fontSize: 14,
     lineHeight: 18,
   },
   indicator: {

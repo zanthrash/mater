@@ -658,7 +658,7 @@ const styles = StyleSheet.create({
   sectionHeader: {
     ...typography.label,
     marginTop: 24,
-    marginBottom: 8,
+    marginBottom: 10,
   },
   sectionBox: {
     borderRadius: 10,
@@ -671,7 +671,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     marginTop: 8,
-    marginBottom: 4,
+    marginBottom: 6,
   },
   fieldLabel: {
     ...typography.caption,

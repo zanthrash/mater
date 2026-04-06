@@ -57,7 +57,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginBottom: 6,
+    marginBottom: 8,
   },
   label: {
     ...typography.label,

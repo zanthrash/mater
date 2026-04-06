@@ -108,20 +108,20 @@ export const colors = {
 
 export const typography = {
   headingFamily: 'SpaceGrotesk-Bold',
-  bodyFamily: 'SpaceGrotesk-Medium',
+  bodyFamily: 'Inter-Regular',
   headingWeight: '700' as const,
-  bodyWeight: '500' as const,
+  bodyWeight: '400' as const,
   labelLetterSpacing: 1.2,
 
   // Type scale — spread directly into StyleSheet styles
-  display:   { fontSize: 28, lineHeight: 34, fontFamily: 'SpaceGrotesk-Bold',   letterSpacing: 3.0 },
-  title:     { fontSize: 22, lineHeight: 28, fontFamily: 'SpaceGrotesk-Bold',   letterSpacing: 0.5 },
-  heading:   { fontSize: 17, lineHeight: 22, fontFamily: 'SpaceGrotesk-Bold',   letterSpacing: 0.3 },
-  body:      { fontSize: 15, lineHeight: 22, fontFamily: 'SpaceGrotesk-Medium', letterSpacing: 0 },
-  bodySmall: { fontSize: 13, lineHeight: 18, fontFamily: 'SpaceGrotesk-Medium', letterSpacing: 0 },
-  label:     { fontSize: 11, lineHeight: 14, fontFamily: 'SpaceGrotesk-Medium', letterSpacing: 1.2 },
-  caption:   { fontSize: 10, lineHeight: 14, fontFamily: 'SpaceGrotesk-Medium', letterSpacing: 1.2 },
-  button:    { fontSize: 16, lineHeight: 20, fontFamily: 'SpaceGrotesk-Bold',   letterSpacing: 0.3 },
+  display:   { fontSize: 36, lineHeight: 44, fontFamily: 'SpaceGrotesk-Bold', letterSpacing: 1.0 },
+  title:     { fontSize: 28, lineHeight: 34, fontFamily: 'SpaceGrotesk-Bold', letterSpacing: 0.3 },
+  heading:   { fontSize: 22, lineHeight: 28, fontFamily: 'SpaceGrotesk-Bold', letterSpacing: 0.2 },
+  body:      { fontSize: 16, lineHeight: 24, fontFamily: 'Inter-Regular',     letterSpacing: 0 },
+  bodySmall: { fontSize: 14, lineHeight: 20, fontFamily: 'Inter-Regular',     letterSpacing: 0 },
+  label:     { fontSize: 14, lineHeight: 18, fontFamily: 'Inter-Medium',      letterSpacing: 1.2 },
+  caption:   { fontSize: 14, lineHeight: 18, fontFamily: 'Inter-Regular',     letterSpacing: 0.5 },
+  button:    { fontSize: 17, lineHeight: 22, fontFamily: 'SpaceGrotesk-Bold', letterSpacing: 0.3 },
 }
 
 export type ThemeColors = typeof colors.light
