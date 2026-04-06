@@ -91,6 +91,7 @@ export function TaxonomyValidationScreen({
 
   function handlePickerChange(val: { category: string; type: string; subtype: string | null }) {
     setOverride(val)
+    setRevealedCount(null)
     setPickerOpen(false)
   }
 

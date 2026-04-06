@@ -225,6 +225,54 @@ it('calls onConfirm with overridden taxonomy when confirmed after change', () =>
   )
 })
 
+it('clears stagger animation when classification is overridden', () => {
+  jest.useFakeTimers()
+  const { rerender, getByTestId, getByText } = render(
+    wrap(
+      <TaxonomyValidationScreen
+        classificationResult={null}
+        classificationLoading
+        taxonomyTree={tree}
+        onConfirm={jest.fn()}
+      />
+    )
+  )
+
+  // Result arrives — stagger starts
+  rerender(
+    wrap(
+      <TaxonomyValidationScreen
+        classificationResult={classification}
+        classificationLoading={false}
+        taxonomyTree={tree}
+        onConfirm={jest.fn()}
+      />
+    )
+  )
+
+  // User opens picker and changes classification mid-reveal
+  act(() => {
+    fireEvent.press(getByTestId('change-classification-button'))
+  })
+  act(() => {
+    fireEvent.press(getByTestId('picker-item-Earthmoving'))
+  })
+  act(() => {
+    fireEvent.press(getByTestId('picker-item-Excavator'))
+  })
+  act(() => {
+    fireEvent.press(getByTestId('picker-item-Standard'))
+  })
+
+  // Looks Good should NOT be permanently disabled after override
+  act(() => {
+    jest.advanceTimersByTime(0)
+  })
+  expect(getByTestId('confirm-button').props.accessibilityState?.disabled).not.toBe(true)
+
+  jest.useRealTimers()
+})
+
 // ── Staggered reveal ──────────────────────────────────────────────────────────
 
 it('reveals checklist items progressively after result arrives', async () => {
