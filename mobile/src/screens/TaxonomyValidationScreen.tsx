@@ -1,11 +1,13 @@
-import React, { useState } from 'react'
-import { View, Text, ScrollView, StyleSheet } from 'react-native'
+import React, { useState, useRef, useEffect } from 'react'
+import { View, Text, ScrollView, StyleSheet, Animated } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { useThemeColors, typography } from '../theme'
 import { WizardHeader } from '../components/WizardHeader'
 import { PrimaryButton } from '../components/PrimaryButton'
 import { AIBadge } from '../components/AIBadge'
 import { TaxonomyPicker } from '../components/TaxonomyPicker'
+import { AiAnalysisBanner } from '../components/AiAnalysisBanner'
+import { ChecklistSkeleton } from '../components/ChecklistSkeleton'
 import type { ClassificationResult, TaxonomyCategoryNode } from '../services/APIClient'
 
 const CATEGORY_CHECKLISTS: Record<string, string[]> = {
@@ -85,10 +87,20 @@ export function TaxonomyValidationScreen({
       <ScrollView contentContainerStyle={styles.content}>
         {isLoading ? (
           <View testID="taxonomy-validation-skeleton">
+            {/* Taxonomy card skeleton */}
             <View style={[styles.skeletonCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               {[80, 120, 60].map((w, i) => (
                 <View key={i} style={[styles.skeletonRow, { width: w, backgroundColor: colors.borderLight }]} />
               ))}
+            </View>
+
+            {/* AI analysis banner */}
+            <AiAnalysisBanner message="Analyzing your equipment..." />
+
+            {/* Checklist skeleton */}
+            <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <View style={[styles.skeletonRow, { width: 110, backgroundColor: colors.borderLight, marginBottom: 6 }]} />
+              <ChecklistSkeleton rows={5} />
             </View>
           </View>
         ) : (
@@ -165,6 +177,7 @@ export function TaxonomyValidationScreen({
             onPress={() => setPickerOpen(true)}
             icon="create-outline"
             style={styles.changeBtn}
+            disabled={isLoading}
           />
         </View>
       </ScrollView>
