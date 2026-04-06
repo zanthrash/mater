@@ -29,10 +29,34 @@ jest.mock('../components/CameraViewfinder', () => ({
   },
 }))
 
+jest.mock('../screens/CaptureFlowScreen', () => ({
+  CaptureFlowScreen: ({
+    onComplete,
+    onExit,
+  }: {
+    onComplete: () => void
+    onExit: () => void
+  }) => {
+    const { TouchableOpacity, Text, View } = require('react-native')
+    return (
+      <View testID="capture-flow-screen">
+        <TouchableOpacity testID="mock-flow-complete" onPress={onComplete}>
+          <Text>Complete</Text>
+        </TouchableOpacity>
+        <TouchableOpacity testID="mock-flow-exit" onPress={onExit}>
+          <Text>Exit</Text>
+        </TouchableOpacity>
+      </View>
+    )
+  },
+}))
+
 const defaultProps = {
   photoChecklist: ['Front', 'Rear'],
   photos: [] as AssetPhoto[],
+  skippedLabels: [] as string[],
   onPhotosChange: jest.fn(),
+  onSkippedLabelsChange: jest.fn(),
   onContinue: jest.fn(),
 }
 
@@ -106,4 +130,61 @@ it('Delete button removes photo and calls onPhotosChange without that photo', ()
 it('Add Extra Photo button exists', () => {
   const { getByTestId } = render(<GuidedPhotosScreen {...defaultProps} />)
   expect(getByTestId('add-extra-button')).toBeTruthy()
+})
+
+it('"Start Capturing" button is visible when there are uncaptured items', () => {
+  const { getByTestId } = render(<GuidedPhotosScreen {...defaultProps} />)
+  expect(getByTestId('start-capturing-button')).toBeTruthy()
+})
+
+it('"Start Capturing" button is hidden when all checklist items are captured', () => {
+  const photos: AssetPhoto[] = [
+    { uri: 'data:image/jpeg;base64,a', base64: 'a', label: 'Front', type: 'guided' },
+    { uri: 'data:image/jpeg;base64,b', base64: 'b', label: 'Rear', type: 'guided' },
+  ]
+  const { queryByTestId } = render(
+    <GuidedPhotosScreen {...defaultProps} photos={photos} />
+  )
+  expect(queryByTestId('start-capturing-button')).toBeNull()
+})
+
+it('pressing "Start Capturing" shows capture flow screen', () => {
+  const { getByTestId } = render(<GuidedPhotosScreen {...defaultProps} />)
+  fireEvent.press(getByTestId('start-capturing-button'))
+  expect(getByTestId('capture-flow-screen')).toBeTruthy()
+})
+
+it('pressing individual "Capture" button enters capture flow from that item', () => {
+  const { getByTestId } = render(<GuidedPhotosScreen {...defaultProps} />)
+  fireEvent.press(getByTestId('capture-Rear'))
+  expect(getByTestId('capture-flow-screen')).toBeTruthy()
+})
+
+it('flow exit returns to checklist', () => {
+  const { getByTestId, queryByTestId } = render(<GuidedPhotosScreen {...defaultProps} />)
+  fireEvent.press(getByTestId('start-capturing-button'))
+  fireEvent.press(getByTestId('mock-flow-exit'))
+  expect(queryByTestId('capture-flow-screen')).toBeNull()
+  expect(getByTestId('start-capturing-button')).toBeTruthy()
+})
+
+it('flow complete returns to checklist', () => {
+  const { getByTestId, queryByTestId } = render(<GuidedPhotosScreen {...defaultProps} />)
+  fireEvent.press(getByTestId('start-capturing-button'))
+  fireEvent.press(getByTestId('mock-flow-complete'))
+  expect(queryByTestId('capture-flow-screen')).toBeNull()
+})
+
+it('skipped items show "Skipped" badge', () => {
+  const { getByTestId } = render(
+    <GuidedPhotosScreen {...defaultProps} skippedLabels={['Front']} />
+  )
+  expect(getByTestId('skipped-badge-Front')).toBeTruthy()
+})
+
+it('skipped items still show a "Capture" button to re-enter flow', () => {
+  const { getByTestId } = render(
+    <GuidedPhotosScreen {...defaultProps} skippedLabels={['Front']} />
+  )
+  expect(getByTestId('capture-Front')).toBeTruthy()
 })

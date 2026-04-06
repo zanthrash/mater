@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, Image, Animated } from 'react-nativ
 import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { CameraViewfinder } from '../components/CameraViewfinder'
+import { CaptureFlowScreen } from './CaptureFlowScreen'
 import { WizardHeader } from '../components/WizardHeader'
 import { PrimaryButton } from '../components/PrimaryButton'
 import { AnimatedPressableButton } from '../components/AnimatedPressable'
@@ -13,7 +14,9 @@ interface Props {
   photoChecklist: string[]
   isChecklistLoading?: boolean
   photos: AssetPhoto[]
+  skippedLabels: string[]
   onPhotosChange: (photos: AssetPhoto[]) => void
+  onSkippedLabelsChange: (labels: string[]) => void
   onContinue: () => void
   onBack?: () => void
   onRestart?: () => void
@@ -62,7 +65,6 @@ function groupChecklist(items: string[]): Array<{ label: string; items: string[]
     result.push({ label: 'Other', items: ungrouped })
   }
 
-  // Fall back to single flat group if grouping didn't work well
   const groupedCount = result.reduce((sum, g) => sum + g.items.length, 0)
   if (result.length <= 1 || groupedCount < items.length * 0.6) {
     return [{ label: '', items }]
@@ -98,7 +100,9 @@ export function GuidedPhotosScreen({
   photoChecklist,
   isChecklistLoading = false,
   photos,
+  skippedLabels,
   onPhotosChange,
+  onSkippedLabelsChange,
   onContinue,
   onBack,
   onRestart,
@@ -108,13 +112,10 @@ export function GuidedPhotosScreen({
   const [cameraOpen, setCameraOpen] = useState(false)
   const [currentLabel, setCurrentLabel] = useState<string | null>(null)
   const [retakeLabel, setRetakeLabel] = useState<string | null>(null)
+  const [captureFlowActive, setCaptureFlowActive] = useState(false)
+  const [captureFlowStartLabel, setCaptureFlowStartLabel] = useState<string | null>(null)
 
-  const handleCaptureChecklist = (label: string) => {
-    setCurrentLabel(label)
-    setRetakeLabel(null)
-    setCameraOpen(true)
-  }
-
+  // Single-photo retake (unchanged behavior)
   const handleRetake = (label: string) => {
     setCurrentLabel(label)
     setRetakeLabel(label)
@@ -130,12 +131,7 @@ export function GuidedPhotosScreen({
   const handleCapture = (base64: string) => {
     const uri = `data:image/jpeg;base64,${base64}`
     if (retakeLabel !== null) {
-      const updated = photos.map(p =>
-        p.label === retakeLabel ? { ...p, uri, base64 } : p
-      )
-      onPhotosChange(updated)
-    } else if (currentLabel !== null) {
-      onPhotosChange([...photos, { uri, base64, label: currentLabel, type: 'guided' as const }])
+      onPhotosChange(photos.map(p => p.label === retakeLabel ? { ...p, uri, base64 } : p))
     } else {
       onPhotosChange([...photos, { uri, base64, label: 'Extra', type: 'extra' as const }])
     }
@@ -161,17 +157,81 @@ export function GuidedPhotosScreen({
     onPhotosChange(photos.filter((_, i) => i !== targetIndex))
   }
 
-  if (cameraOpen) {
-    return <CameraViewfinder onCapture={handleCapture} onCancel={handleCancelCamera} label={currentLabel ?? undefined} />
+  // Capture flow entry points
+  const handleStartCapturing = () => {
+    setCaptureFlowStartLabel(null)
+    setCaptureFlowActive(true)
   }
 
+  const handleCaptureChecklist = (label: string) => {
+    setCaptureFlowStartLabel(label)
+    setCaptureFlowActive(true)
+  }
+
+  const handleFlowPhotoCapture = (photo: AssetPhoto) => {
+    const exists = photos.some(p => p.type === 'guided' && p.label === photo.label)
+    if (exists) {
+      onPhotosChange(photos.map(p => (p.type === 'guided' && p.label === photo.label ? photo : p)))
+    } else {
+      onPhotosChange([...photos, photo])
+    }
+  }
+
+  const handleFlowSkip = (label: string) => {
+    if (!skippedLabels.includes(label)) {
+      onSkippedLabelsChange([...skippedLabels, label])
+    }
+  }
+
+  const handleFlowComplete = () => {
+    setCaptureFlowActive(false)
+    setCaptureFlowStartLabel(null)
+  }
+
+  const handleFlowExit = () => {
+    setCaptureFlowActive(false)
+    setCaptureFlowStartLabel(null)
+  }
+
+  // Retake opens camera directly (single photo, no auto-advance)
+  if (cameraOpen) {
+    return (
+      <CameraViewfinder
+        onCapture={handleCapture}
+        onCancel={handleCancelCamera}
+        label={currentLabel ?? undefined}
+      />
+    )
+  }
+
+  // Capture flow (auto-advance)
+  if (captureFlowActive) {
+    return (
+      <CaptureFlowScreen
+        checklist={photoChecklist}
+        photos={photos}
+        skippedLabels={skippedLabels}
+        startFrom={captureFlowStartLabel}
+        onPhotoCapture={handleFlowPhotoCapture}
+        onSkip={handleFlowSkip}
+        onComplete={handleFlowComplete}
+        onExit={handleFlowExit}
+      />
+    )
+  }
+
+  const capturedLabels = new Set(photos.filter(p => p.type === 'guided').map(p => p.label))
+  const skippedSet = new Set(skippedLabels)
   const canContinue = photos.length >= MIN_PHOTOS
   const extraPhotos = photos.filter(p => p.type === 'extra')
   const guidedCaptured = photos.filter(p => p.type === 'guided').length
   const total = photoChecklist.length
   const groups = groupChecklist(photoChecklist)
 
-  // Running index across all checklist items for numbering
+  const hasUncapturedUnskipped = photoChecklist.some(
+    item => !capturedLabels.has(item) && !skippedSet.has(item)
+  )
+
   let globalIndex = 0
 
   return (
@@ -217,6 +277,7 @@ export function GuidedPhotosScreen({
                 {group.items.map(item => {
                   const itemNumber = ++globalIndex
                   const captured = photos.find(p => p.type === 'guided' && p.label === item)
+                  const isSkipped = skippedSet.has(item)
 
                   if (captured) {
                     const imageUri = captured.uri || `data:image/jpeg;base64,${captured.base64}`
@@ -262,21 +323,29 @@ export function GuidedPhotosScreen({
 
                   return (
                     <View key={item} style={[styles.row, { borderBottomColor: colors.separator }]}>
-                      <View style={[styles.numberCircle, { backgroundColor: colors.surfaceAlt, borderWidth: 1, borderColor: colors.border }]}>
-                        <Text style={[styles.numberText, { color: colors.secondary, fontFamily: typography.bodyFamily }]}>
-                          {itemNumber}
-                        </Text>
-                      </View>
+                      {isSkipped ? (
+                        <View style={[styles.skippedBadge, { backgroundColor: colors.surfaceAlt, borderColor: colors.border }]} testID={`skipped-badge-${item}`}>
+                          <Text style={[styles.skippedBadgeText, { color: colors.secondary, fontFamily: typography.bodyFamily }]}>
+                            Skipped
+                          </Text>
+                        </View>
+                      ) : (
+                        <View style={[styles.numberCircle, { backgroundColor: colors.surfaceAlt, borderWidth: 1, borderColor: colors.border }]}>
+                          <Text style={[styles.numberText, { color: colors.secondary, fontFamily: typography.bodyFamily }]}>
+                            {itemNumber}
+                          </Text>
+                        </View>
+                      )}
                       <Text style={[styles.itemLabel, { color: colors.label, fontFamily: typography.bodyFamily }]}>
                         {item}
                       </Text>
                       <AnimatedPressableButton
-                        style={[styles.captureButton, { backgroundColor: colors.primary }]}
+                        style={[styles.captureButton, { backgroundColor: isSkipped ? colors.surfaceAlt : colors.primary, borderWidth: isSkipped ? 1 : 0, borderColor: colors.border }]}
                         onPress={() => handleCaptureChecklist(item)}
                         testID={`capture-${item}`}
                       >
-                        <Ionicons name="camera" size={16} color={colors.onPrimary} />
-                        <Text style={[styles.captureButtonText, { fontFamily: typography.bodyFamily }]}>
+                        <Ionicons name="camera" size={16} color={isSkipped ? colors.secondary : colors.onPrimary} />
+                        <Text style={[styles.captureButtonText, { color: isSkipped ? colors.secondary : colors.onPrimary, fontFamily: typography.bodyFamily }]}>
                           Capture
                         </Text>
                       </AnimatedPressableButton>
@@ -328,7 +397,7 @@ export function GuidedPhotosScreen({
         />
       </ScrollView>
 
-      {/* Sticky footer: always-visible progress + Continue */}
+      {/* Sticky footer */}
       <View
         style={[
           styles.stickyFooter,
@@ -346,6 +415,14 @@ export function GuidedPhotosScreen({
             {!canContinue && ` · need ${MIN_PHOTOS - photos.length} more`}
           </Text>
         </View>
+        {hasUncapturedUnskipped && (
+          <PrimaryButton
+            title="Start Capturing"
+            onPress={handleStartCapturing}
+            icon="camera"
+            testID="start-capturing-button"
+          />
+        )}
         <PrimaryButton
           title="Continue"
           onPress={onContinue}
@@ -448,8 +525,18 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   captureButtonText: {
-    color: '#fff',
     ...typography.bodySmall,
+  },
+  skippedBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    flexShrink: 0,
+  },
+  skippedBadgeText: {
+    ...typography.label,
+    fontSize: 11,
   },
   skeletonNumber: {
     width: 24,

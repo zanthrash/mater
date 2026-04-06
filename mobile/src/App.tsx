@@ -48,6 +48,7 @@ function AppContent() {
   const [classificationLoading, setClassificationLoading] = useState(false)
   const [confirmedChecklist, setConfirmedChecklist] = useState<string[] | null>(null)
   const [photos, setPhotos] = useState<AssetPhoto[]>([])
+  const [skippedLabels, setSkippedLabels] = useState<string[]>([])
   const [aiSpecResult, setAiSpecResult] = useState<AnalysisResult | null>(null)
   const [aiAnalysisLoading, setAiAnalysisLoading] = useState(false)
   const [aiAnalysisError, setAiAnalysisError] = useState(false)
@@ -111,6 +112,7 @@ function AppContent() {
                   setVinData({ vin: latestDraft.vin, result: latestDraft.vinResult ?? null })
                 if (latestDraft.classificationResult) setClassificationResult(latestDraft.classificationResult)
                 if (latestDraft.photos) setPhotos(latestDraft.photos)
+                if (latestDraft.skippedLabels) setSkippedLabels(latestDraft.skippedLabels)
                 if (latestDraft.aiSpecResult) setAiSpecResult(latestDraft.aiSpecResult)
                 const validSteps: Screen[] = ['home', 'asset-detail', 'overview', 'vin', 'taxonomy-validation', 'guided-photos', 'review', 'submit-success']
                 const target = validSteps.includes(latestDraft.step as Screen) ? (latestDraft.step as Screen) : 'home'
@@ -131,6 +133,7 @@ function AppContent() {
     setClassificationLoading(false)
     setConfirmedChecklist(null)
     setPhotos([])
+    setSkippedLabels([])
     setAiSpecResult(null)
     setAiAnalysisLoading(false)
     setAiAnalysisError(false)
@@ -349,6 +352,11 @@ function AppContent() {
         onPhotosChange={(updated) => {
           setPhotos(updated)
           stateManager.saveStep('guided-photos', { photos: updated })
+        }}
+        skippedLabels={skippedLabels}
+        onSkippedLabelsChange={(updated) => {
+          setSkippedLabels(updated)
+          stateManager.saveStep('guided-photos', { skippedLabels: updated })
         }}
         onContinue={async () => {
           setAiAnalysisLoading(true)

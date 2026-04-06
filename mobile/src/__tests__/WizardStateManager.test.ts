@@ -155,4 +155,30 @@ describe('WizardStateManager', () => {
       expect(parsed.step).toBe(step)
     }
   })
+
+  it('saves skippedLabels to draft', async () => {
+    ;(AsyncStorage.getItem as jest.Mock).mockResolvedValue(null)
+    ;(AsyncStorage.setItem as jest.Mock).mockResolvedValue(undefined)
+
+    await manager.saveStep('guided-photos', { skippedLabels: ['Serial Plate', 'Engine'] })
+
+    const [, saved] = (AsyncStorage.setItem as jest.Mock).mock.calls[0]
+    const parsed = JSON.parse(saved)
+    expect(parsed.skippedLabels).toEqual(['Serial Plate', 'Engine'])
+  })
+
+  it('merges skippedLabels with existing draft', async () => {
+    const existing: Partial<IntakeDraft> = {
+      step: 'guided-photos',
+      skippedLabels: ['Front'],
+    }
+    ;(AsyncStorage.getItem as jest.Mock).mockResolvedValue(JSON.stringify(existing))
+    ;(AsyncStorage.setItem as jest.Mock).mockResolvedValue(undefined)
+
+    await manager.saveStep('guided-photos', { skippedLabels: ['Front', 'Rear'] })
+
+    const [, saved] = (AsyncStorage.setItem as jest.Mock).mock.calls[0]
+    const parsed = JSON.parse(saved)
+    expect(parsed.skippedLabels).toEqual(['Front', 'Rear'])
+  })
 })

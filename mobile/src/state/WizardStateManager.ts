@@ -30,6 +30,7 @@ export interface IntakeDraft {
     photoChecklist: string[]
   } | null
   photos?: AssetPhoto[]
+  skippedLabels?: string[]
   aiSpecResult?: {
     coreSpecs: {
       make: string | null
