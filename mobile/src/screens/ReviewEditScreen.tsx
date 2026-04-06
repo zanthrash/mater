@@ -18,6 +18,7 @@ import { PrimaryButton } from '../components/PrimaryButton'
 import { SpecRow } from '../components/SpecRow'
 import { camelToTitle, titleToCamel } from '../utils/formatting'
 import { TaxonomyPicker } from '../components/TaxonomyPicker'
+import { AiAnalysisBanner } from '../components/AiAnalysisBanner'
 import type { TaxonomyCategoryNode } from '../services/APIClient'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -143,37 +144,6 @@ function ShimmerRows({ testID }: { testID: string }) {
         />
       ))}
     </View>
-  )
-}
-
-function AiAnalysisBanner() {
-  const colors = useThemeColors()
-  const pulse = useRef(new Animated.Value(0.6)).current
-
-  useEffect(() => {
-    const animation = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulse, { toValue: 1, duration: 900, useNativeDriver: true }),
-        Animated.timing(pulse, { toValue: 0.6, duration: 900, useNativeDriver: true }),
-      ])
-    )
-    animation.start()
-    return () => animation.stop()
-  }, [])
-
-  return (
-    <Animated.View
-      style={[
-        styles.aiBanner,
-        { backgroundColor: colors.surfaceAlt, borderLeftColor: colors.primary, opacity: pulse },
-      ]}
-      testID="ai-analysis-banner"
-    >
-      <ActivityIndicator size="small" color={colors.primary} style={{ marginRight: 8 }} />
-      <Text style={[styles.aiBannerText, { color: colors.primary, fontFamily: typography.bodyFamily }]}>
-        AI is analyzing your photos...
-      </Text>
-    </Animated.View>
   )
 }
 
@@ -756,19 +726,6 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 8,
     marginBottom: 10,
-  },
-  aiBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderLeftWidth: 3,
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    marginBottom: 16,
-  },
-  aiBannerText: {
-    ...typography.body,
-    flex: 1,
   },
   photoScroll: {
     marginTop: 4,
