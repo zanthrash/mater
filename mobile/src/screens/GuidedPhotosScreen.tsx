@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, Image, Animated } from 'react-nativ
 import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { CameraViewfinder } from '../components/CameraViewfinder'
+import { ChecklistSkeleton } from '../components/ChecklistSkeleton'
 import { CaptureFlowScreen } from './CaptureFlowScreen'
 import { WizardHeader } from '../components/WizardHeader'
 import { PrimaryButton } from '../components/PrimaryButton'
@@ -72,29 +73,6 @@ function groupChecklist(items: string[]): Array<{ label: string; items: string[]
   return result
 }
 
-function SkeletonRow() {
-  const colors = useThemeColors()
-  const shimmer = useRef(new Animated.Value(0.4)).current
-
-  useEffect(() => {
-    const animation = Animated.loop(
-      Animated.sequence([
-        Animated.timing(shimmer, { toValue: 1, duration: 600, useNativeDriver: true }),
-        Animated.timing(shimmer, { toValue: 0.4, duration: 600, useNativeDriver: true }),
-      ])
-    )
-    animation.start()
-    return () => animation.stop()
-  }, [])
-
-  return (
-    <Animated.View style={[styles.row, { borderBottomColor: colors.separator }, { opacity: shimmer }]}>
-      <View style={[styles.skeletonNumber, { backgroundColor: colors.border }]} />
-      <View style={[styles.skeletonText, { backgroundColor: colors.surface }]} />
-      <View style={[styles.skeletonButton, { backgroundColor: colors.surface }]} />
-    </Animated.View>
-  )
-}
 
 export function GuidedPhotosScreen({
   photoChecklist,
@@ -263,7 +241,7 @@ export function GuidedPhotosScreen({
 
         {isChecklistLoading ? (
           <View style={[styles.checklistCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            {[0, 1, 2, 3, 4].map(i => <SkeletonRow key={i} />)}
+            <ChecklistSkeleton />
           </View>
         ) : (
           groups.map((group, groupIndex) => (
@@ -537,23 +515,6 @@ const styles = StyleSheet.create({
   skippedBadgeText: {
     ...typography.label,
     fontSize: 11,
-  },
-  skeletonNumber: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    flexShrink: 0,
-  },
-  skeletonText: {
-    flex: 1,
-    height: 14,
-    borderRadius: 4,
-    marginRight: 8,
-  },
-  skeletonButton: {
-    width: 76,
-    height: 34,
-    borderRadius: 8,
   },
   addExtraButton: {
     marginTop: 12,
