@@ -1,5 +1,5 @@
 import React from 'react'
-import { render, fireEvent } from '@testing-library/react-native'
+import { render, fireEvent, act } from '@testing-library/react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { TaxonomyValidationScreen } from '../screens/TaxonomyValidationScreen'
 import type { ClassificationResult, TaxonomyCategoryNode } from '../services/APIClient'
@@ -223,4 +223,75 @@ it('calls onConfirm with overridden taxonomy when confirmed after change', () =>
     { category: 'Earthmoving', type: 'Excavator', subtype: 'Standard' },
     expect.any(Array)
   )
+})
+
+// ── Staggered reveal ──────────────────────────────────────────────────────────
+
+it('reveals checklist items progressively after result arrives', async () => {
+  jest.useFakeTimers()
+  const { rerender, queryByText } = render(
+    wrap(
+      <TaxonomyValidationScreen
+        classificationResult={null}
+        classificationLoading
+        taxonomyTree={tree}
+        onConfirm={jest.fn()}
+      />
+    )
+  )
+
+  // Result arrives
+  rerender(
+    wrap(
+      <TaxonomyValidationScreen
+        classificationResult={classification}
+        classificationLoading={false}
+        taxonomyTree={tree}
+        onConfirm={jest.fn()}
+      />
+    )
+  )
+
+  // After enough time for all items to reveal (4 items * 60ms = 240ms)
+  act(() => { jest.advanceTimersByTime(300) })
+
+  expect(queryByText('Front')).toBeTruthy()
+  expect(queryByText('Serial Plate')).toBeTruthy()
+
+  jest.useRealTimers()
+})
+
+it('disables Looks Good until reveal completes', () => {
+  jest.useFakeTimers()
+  const { rerender, getByTestId } = render(
+    wrap(
+      <TaxonomyValidationScreen
+        classificationResult={null}
+        classificationLoading
+        taxonomyTree={tree}
+        onConfirm={jest.fn()}
+      />
+    )
+  )
+
+  rerender(
+    wrap(
+      <TaxonomyValidationScreen
+        classificationResult={classification}
+        classificationLoading={false}
+        taxonomyTree={tree}
+        onConfirm={jest.fn()}
+      />
+    )
+  )
+
+  // Before reveal completes
+  act(() => { jest.advanceTimersByTime(0) })
+  expect(getByTestId('confirm-button').props.accessibilityState?.disabled).toBe(true)
+
+  // After reveal completes
+  act(() => { jest.advanceTimersByTime(300) })
+  expect(getByTestId('confirm-button').props.accessibilityState?.disabled).not.toBe(true)
+
+  jest.useRealTimers()
 })

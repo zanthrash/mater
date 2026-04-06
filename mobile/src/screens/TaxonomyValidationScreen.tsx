@@ -46,6 +46,8 @@ export function TaxonomyValidationScreen({
   const colors = useThemeColors()
   const [override, setOverride] = useState<{ category: string; type: string; subtype: string | null } | null>(null)
   const [pickerOpen, setPickerOpen] = useState(false)
+  const [revealedCount, setRevealedCount] = useState<number | null>(null)
+  const prevResultRef = useRef<ClassificationResult | null>(classificationResult)
 
   const taxonomy = override ?? (classificationResult
     ? { category: classificationResult.taxonomy.category, type: classificationResult.taxonomy.type, subtype: classificationResult.taxonomy.subtype }
@@ -59,7 +61,28 @@ export function TaxonomyValidationScreen({
   const confidenceColor =
     confidence >= 0.8 ? colors.success : confidence >= 0.5 ? colors.warning : colors.error
 
+  useEffect(() => {
+    if (classificationResult && !prevResultRef.current) {
+      setRevealedCount(0)
+      const items = override
+        ? (CATEGORY_CHECKLISTS[override.category] ?? DEFAULT_CHECKLIST)
+        : classificationResult.photoChecklist
+      let count = 0
+      const interval = setInterval(() => {
+        count++
+        setRevealedCount(count)
+        if (count >= items.length) clearInterval(interval)
+      }, 60)
+      prevResultRef.current = classificationResult
+      return () => clearInterval(interval)
+    }
+    if (classificationResult) {
+      prevResultRef.current = classificationResult
+    }
+  }, [classificationResult])
+
   const isLoading = classificationLoading && !classificationResult
+  const isRevealing = revealedCount !== null && revealedCount < checklist.length
 
   function handleConfirm() {
     if (!taxonomy) return
@@ -152,12 +175,15 @@ export function TaxonomyValidationScreen({
               <Text style={[typography.bodySmall, { color: colors.secondary, marginBottom: 10 }]}>
                 Based on this classification, we'll capture:
               </Text>
-              {checklist.map((item) => (
-                <View key={item} style={styles.checklistItem}>
-                  <Ionicons name="camera-outline" size={14} color={colors.secondary} style={styles.checklistIcon} />
-                  <Text style={[typography.body, { color: colors.body }]}>{item}</Text>
-                </View>
-              ))}
+              {checklist.map((item, index) => {
+                if (revealedCount !== null && index >= revealedCount) return null
+                return (
+                  <View key={item} style={styles.checklistItem}>
+                    <Ionicons name="camera-outline" size={14} color={colors.secondary} style={styles.checklistIcon} />
+                    <Text style={[typography.body, { color: colors.body }]}>{item}</Text>
+                  </View>
+                )
+              })}
             </View>
           </>
         )}
@@ -167,7 +193,7 @@ export function TaxonomyValidationScreen({
             testID="confirm-button"
             title="Looks Good"
             onPress={handleConfirm}
-            disabled={isLoading || !taxonomy}
+            disabled={isLoading || !taxonomy || isRevealing}
             icon="checkmark"
           />
           <PrimaryButton
