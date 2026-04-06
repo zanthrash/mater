@@ -94,8 +94,8 @@ export const colors = {
 
     // Input
     inputText: '#F8FAFC',
-    inputBorder: 'rgba(255,255,255,0.15)',
-    inputBg: '#0F172A',
+    inputBorder: 'rgba(255,255,255,0.30)',
+    inputBg: '#1E293B',
 
     // AI-populated fields
     aiBg: 'rgba(59,130,246,0.08)',

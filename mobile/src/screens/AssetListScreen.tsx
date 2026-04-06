@@ -212,14 +212,13 @@ export function AssetListScreen({ assets, loading, onNewIntake, onAssetPress, on
         </Pressable>
       </View>
 
-      <View style={[styles.searchWrapper, { borderBottomColor: colors.border }]}>
+      <View style={[styles.searchWrapper, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder }]}>
         <Ionicons name="search-outline" size={16} color={colors.placeholder} style={styles.searchIcon} />
         <TextInput
           testID="search-input"
           style={[
             styles.searchInput,
             {
-              backgroundColor: 'transparent',
               color: colors.inputText,
               fontFamily: typography.bodyFamily,
             },
@@ -358,8 +357,10 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     marginTop: 12,
     marginBottom: 0,
-    borderBottomWidth: 1,
-    paddingBottom: 10,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
   },
   searchIcon: {
     marginRight: 8,
