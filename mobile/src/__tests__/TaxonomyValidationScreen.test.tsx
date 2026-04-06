@@ -58,6 +58,48 @@ it('disables Looks Good button while loading', () => {
   expect(getByTestId('confirm-button').props.accessibilityState?.disabled).toBe(true)
 })
 
+it('shows AI analysis banner while loading', () => {
+  const { getByTestId } = render(
+    wrap(
+      <TaxonomyValidationScreen
+        classificationResult={null}
+        classificationLoading
+        taxonomyTree={tree}
+        onConfirm={jest.fn()}
+      />
+    )
+  )
+  expect(getByTestId('ai-analysis-banner')).toBeTruthy()
+})
+
+it('shows checklist skeleton while loading', () => {
+  const { getByTestId } = render(
+    wrap(
+      <TaxonomyValidationScreen
+        classificationResult={null}
+        classificationLoading
+        taxonomyTree={tree}
+        onConfirm={jest.fn()}
+      />
+    )
+  )
+  expect(getByTestId('checklist-skeleton')).toBeTruthy()
+})
+
+it('disables Change Classification button while loading', () => {
+  const { getByTestId } = render(
+    wrap(
+      <TaxonomyValidationScreen
+        classificationResult={null}
+        classificationLoading
+        taxonomyTree={tree}
+        onConfirm={jest.fn()}
+      />
+    )
+  )
+  expect(getByTestId('change-classification-button').props.accessibilityState?.disabled).toBe(true)
+})
+
 // ── Classification display ────────────────────────────────────────────────────
 
 it('shows AI classification result', () => {
@@ -127,48 +169,6 @@ it('calls onConfirm with taxonomy and checklist when Looks Good pressed', () => 
 })
 
 // ── Override ──────────────────────────────────────────────────────────────────
-
-it('shows AI analysis banner while loading', () => {
-  const { getByTestId } = render(
-    wrap(
-      <TaxonomyValidationScreen
-        classificationResult={null}
-        classificationLoading
-        taxonomyTree={tree}
-        onConfirm={jest.fn()}
-      />
-    )
-  )
-  expect(getByTestId('ai-analysis-banner')).toBeTruthy()
-})
-
-it('shows checklist skeleton while loading', () => {
-  const { getByTestId } = render(
-    wrap(
-      <TaxonomyValidationScreen
-        classificationResult={null}
-        classificationLoading
-        taxonomyTree={tree}
-        onConfirm={jest.fn()}
-      />
-    )
-  )
-  expect(getByTestId('checklist-skeleton')).toBeTruthy()
-})
-
-it('disables Change Classification button while loading', () => {
-  const { getByTestId } = render(
-    wrap(
-      <TaxonomyValidationScreen
-        classificationResult={null}
-        classificationLoading
-        taxonomyTree={tree}
-        onConfirm={jest.fn()}
-      />
-    )
-  )
-  expect(getByTestId('change-classification-button').props.accessibilityState?.disabled).toBe(true)
-})
 
 it('shows Change Classification button', () => {
   const { getByTestId } = render(
