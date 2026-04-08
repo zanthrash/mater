@@ -6,18 +6,11 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme {
-  --color-surface-primary: #0F172A;
-  --color-surface-card: #1E293B;
-  --color-surface-input: #0F172A;
-  --color-text-primary: #F1F5F9;
-  --color-text-secondary: #94A3B8;
-  --color-text-muted: #64748B;
   --color-accent-blue: #3B82F6;
   --color-accent-green: #10B981;
   --color-accent-amber: #F59E0B;
   --color-accent-red: #EF4444;
   --color-accent-purple: #8B5CF6;
-  --color-border: rgba(255, 255, 255, 0.06);
 }
 
 @theme inline {
@@ -64,6 +57,14 @@
 }
 
 :root {
+  --color-surface-primary: #F8FAFC;
+  --color-surface-card: #FFFFFF;
+  --color-surface-input: #F8FAFC;
+  --color-text-primary: #0F172A;
+  --color-text-secondary: #475569;
+  --color-text-muted: #94A3B8;
+  --color-border: rgba(0, 0, 0, 0.08);
+  --color-border-subtle: rgba(0, 0, 0, 0.06);
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -99,6 +100,14 @@
 }
 
 .dark {
+  --color-surface-primary: #0F172A;
+  --color-surface-card: #1E293B;
+  --color-surface-input: #0F172A;
+  --color-text-primary: #F1F5F9;
+  --color-text-secondary: #94A3B8;
+  --color-text-muted: #64748B;
+  --color-border: rgba(255, 255, 255, 0.06);
+  --color-border-subtle: rgba(255, 255, 255, 0.04);
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);
@@ -142,4 +151,18 @@
   html {
     @apply font-sans;
   }
+}
+
+/* Recharts tooltip theming */
+.recharts-default-tooltip {
+  background-color: var(--color-surface-card) !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: 8px !important;
+  font-size: 11px !important;
+}
+.recharts-tooltip-label {
+  color: var(--color-text-primary) !important;
+}
+.recharts-tooltip-item {
+  color: var(--color-text-secondary) !important;
 }

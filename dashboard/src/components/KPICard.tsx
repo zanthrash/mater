@@ -12,7 +12,7 @@ interface KPICardProps {
 export function KPICard({ label, value, subtitle, delta, deltaColor, highlight, highlightColor = 'var(--color-accent-amber)', onClick }: KPICardProps) {
   return (
     <div
-      className={`flex-1 rounded-xl p-3 border cursor-default ${highlight ? '' : 'bg-[var(--color-surface-card)] border-white/[0.04]'}`}
+      className={`flex-1 rounded-xl p-3 border cursor-default ${highlight ? '' : 'bg-[var(--color-surface-card)] border-[var(--color-border-subtle)]'}`}
       style={highlight ? { background: `linear-gradient(135deg, color-mix(in srgb, ${highlightColor} 12%, transparent), color-mix(in srgb, ${highlightColor} 4%, transparent))`, borderColor: `color-mix(in srgb, ${highlightColor} 20%, transparent)` } : undefined}
       onClick={onClick}
     >

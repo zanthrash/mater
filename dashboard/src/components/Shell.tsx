@@ -8,7 +8,7 @@ interface ShellProps {
 
 export function Shell({ children, activityCollapsed = false }: ShellProps) {
   return (
-    <div className="h-screen flex bg-slate-950 text-slate-100 overflow-hidden">
+    <div className="h-screen flex bg-background text-foreground overflow-hidden">
       <Sidebar />
       <main className="flex-1 overflow-y-auto">
         {children}

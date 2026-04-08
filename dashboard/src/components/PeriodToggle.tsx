@@ -13,7 +13,7 @@ export function PeriodToggle({ value, onChange }: { value: Period; onChange: (p:
         <button
           key={opt.value}
           onClick={() => onChange(opt.value)}
-          className={`text-xs px-2.5 py-1 rounded-md transition-colors ${value === opt.value ? 'bg-[var(--color-surface-card)] text-[var(--color-text-primary)] border border-white/[0.08]' : 'text-[var(--color-text-muted)] bg-[var(--color-surface-primary)]'}`}
+          className={`text-xs px-2.5 py-1 rounded-md transition-colors ${value === opt.value ? 'bg-[var(--color-surface-card)] text-[var(--color-text-primary)] border border-[var(--color-border)]' : 'text-[var(--color-text-muted)] bg-[var(--color-surface-primary)]'}`}
         >
           {opt.label}
         </button>

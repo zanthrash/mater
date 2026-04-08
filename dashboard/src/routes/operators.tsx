@@ -53,7 +53,7 @@ function Operators() {
             <div
               key={op.id}
               onClick={() => navigate({ to: '/assets', search: { userId: op.id } as any })}
-              className={`rounded-xl p-3.5 flex items-center gap-3.5 cursor-pointer ${isHighFlagRate ? 'border border-[var(--color-accent-red)]/15' : 'bg-[var(--color-surface-card)] border border-white/[0.04]'}`}
+              className={`rounded-xl p-3.5 flex items-center gap-3.5 cursor-pointer ${isHighFlagRate ? 'border border-[var(--color-accent-red)]/15' : 'bg-[var(--color-surface-card)] border border-[var(--color-border-subtle)]'}`}
               style={isHighFlagRate ? { background: `linear-gradient(135deg, rgba(239,68,68,0.06), var(--color-surface-card))` } : undefined}
             >
               <div className="relative">

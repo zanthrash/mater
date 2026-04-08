@@ -55,7 +55,7 @@ function AssetInventory() {
       <div className="px-4 py-2 flex items-center gap-3 border-b border-[var(--color-border)]">
         <div className="flex gap-1">
           {statuses.map((s) => (
-            <button key={s} onClick={() => navigate({ search: { status: s === 'all' ? undefined : s, category, search: searchParam } })} className={`text-[10px] px-2.5 py-1 rounded-md ${(s === 'all' && !status) || status === s ? 'bg-[var(--color-surface-card)] text-[var(--color-text-primary)] border border-white/[0.08]' : 'text-[var(--color-text-muted)]'}`}>
+            <button key={s} onClick={() => navigate({ search: { status: s === 'all' ? undefined : s, category, search: searchParam } })} className={`text-[10px] px-2.5 py-1 rounded-md ${(s === 'all' && !status) || status === s ? 'bg-[var(--color-surface-card)] text-[var(--color-text-primary)] border border-[var(--color-border)]' : 'text-[var(--color-text-muted)]'}`}>
               {s === 'all' ? 'All' : s.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
             </button>
           ))}
@@ -65,7 +65,7 @@ function AssetInventory() {
           onChange={(e) => setSearchText(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && navigate({ search: { status, category, search: searchText || undefined } })}
           placeholder="Search VIN, make, model..."
-          className="text-xs bg-[var(--color-surface-input)] border border-white/[0.08] rounded-md px-2.5 py-1.5 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] w-64"
+          className="text-xs bg-[var(--color-surface-input)] border border-[var(--color-border)] rounded-md px-2.5 py-1.5 text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] w-64"
         />
         {selected.size > 0 && (
           <div className="flex gap-1 ml-auto">
@@ -78,8 +78,8 @@ function AssetInventory() {
       {/* Table */}
       <div className="flex-1 overflow-auto px-4">
         <table className="w-full text-[11px]">
-          <thead className="sticky top-0 bg-slate-950">
-            <tr className="text-[var(--color-text-muted)] uppercase text-[9px] tracking-wider border-b border-white/[0.04]">
+          <thead className="sticky top-0 bg-background">
+            <tr className="text-[var(--color-text-muted)] uppercase text-[9px] tracking-wider border-b border-[var(--color-border-subtle)]">
               <th className="py-2 w-8"><input type="checkbox" onChange={(e) => setSelected(e.target.checked ? new Set(assets.map(a => a.id)) : new Set())} /></th>
               <th className="text-left py-2 font-medium">Asset</th>
               <th className="text-left py-2 font-medium">Year</th>
@@ -91,7 +91,7 @@ function AssetInventory() {
           </thead>
           <tbody>
             {assets.map((asset) => (
-              <tr key={asset.id} className="border-b border-white/[0.03] hover:bg-white/[0.02] cursor-pointer" onClick={() => navigate({ to: '/assets/$id', params: { id: asset.id } })}>
+              <tr key={asset.id} className="border-b border-[var(--color-border-subtle)] hover:bg-white/[0.02] cursor-pointer" onClick={() => navigate({ to: '/assets/$id', params: { id: asset.id } })}>
                 <td className="py-2" onClick={(e) => e.stopPropagation()}>
                   <input type="checkbox" checked={selected.has(asset.id)} onChange={(e) => { const next = new Set(selected); e.target.checked ? next.add(asset.id) : next.delete(asset.id); setSelected(next) }} />
                 </td>

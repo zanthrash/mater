@@ -1,11 +1,19 @@
 <!doctype html>
-<html lang="en" class="dark">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Mater Dashboard</title>
+    <script>
+      (function () {
+        var stored = localStorage.getItem('mater-theme')
+        var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+        var isDark = stored === 'dark' || (stored !== 'light' && prefersDark)
+        if (isDark) document.documentElement.classList.add('dark')
+      })()
+    </script>
   </head>
-  <body class="bg-slate-950 text-slate-100">
+  <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

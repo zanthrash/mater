@@ -49,20 +49,20 @@ function CommandCenter() {
         {/* Left: Chart + Table */}
         <div className="flex-[2] flex flex-col gap-2.5">
           {/* Intake Volume Chart */}
-          <div className="bg-[var(--color-surface-card)] rounded-xl p-3.5 border border-white/[0.04]">
+          <div className="bg-[var(--color-surface-card)] rounded-xl p-3.5 border border-[var(--color-border-subtle)]">
             <div className="text-xs font-semibold text-[var(--color-text-primary)] mb-2.5">Intake Volume</div>
             <ResponsiveContainer width="100%" height={100}>
               <BarChart data={volume ?? []}>
                 <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#64748B' }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 10, fill: '#64748B' }} axisLine={false} tickLine={false} width={30} />
-                <Tooltip contentStyle={{ backgroundColor: '#1E293B', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, fontSize: 11 }} />
+                <Tooltip contentStyle={{}} wrapperStyle={{}} cursor={{ fill: 'var(--color-border)' }} />
                 <Bar dataKey="count" fill="#3B82F6" radius={[3, 3, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
 
           {/* Recent Intakes Table */}
-          <div className="flex-1 bg-[var(--color-surface-card)] rounded-xl p-3.5 border border-white/[0.04] overflow-hidden">
+          <div className="flex-1 bg-[var(--color-surface-card)] rounded-xl p-3.5 border border-[var(--color-border-subtle)] overflow-hidden">
             <div className="flex justify-between items-center mb-2.5">
               <span className="text-xs font-semibold text-[var(--color-text-primary)]">Recent Intakes</span>
               <button onClick={() => navigate({ to: '/assets' })} className="text-[10px] text-[var(--color-accent-blue)]">View all →</button>
@@ -70,7 +70,7 @@ function CommandCenter() {
             <div className="overflow-auto">
               <table className="w-full text-[11px]">
                 <thead>
-                  <tr className="text-[var(--color-text-muted)] uppercase text-[9px] tracking-wider border-b border-white/[0.04]">
+                  <tr className="text-[var(--color-text-muted)] uppercase text-[9px] tracking-wider border-b border-[var(--color-border-subtle)]">
                     <th className="text-left py-1.5 font-medium">Time</th>
                     <th className="text-left py-1.5 font-medium">Asset</th>
                     <th className="text-left py-1.5 font-medium">Category</th>
@@ -80,7 +80,7 @@ function CommandCenter() {
                 </thead>
                 <tbody>
                   {(assetsResult?.data ?? []).map((asset) => (
-                    <tr key={asset.id} className="border-b border-white/[0.03] cursor-pointer hover:bg-white/[0.02]" onClick={() => navigate({ to: '/assets/$id', params: { id: asset.id } })}>
+                    <tr key={asset.id} className="border-b border-[var(--color-border-subtle)] cursor-pointer hover:bg-white/[0.02]" onClick={() => navigate({ to: '/assets/$id', params: { id: asset.id } })}>
                       <td className="py-2 text-[var(--color-text-muted)]">{new Date(asset.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
                       <td className="py-2 font-medium text-[var(--color-text-primary)]">{[asset.make, asset.model].filter(Boolean).join(' ') || 'Unknown'}</td>
                       <td className="py-2"><span className="bg-[var(--color-accent-blue)]/15 text-[var(--color-accent-blue)] px-1.5 py-0.5 rounded text-[9px]">{asset.category ?? 'Unknown'}</span></td>
@@ -97,7 +97,7 @@ function CommandCenter() {
         {/* Right: Categories + Top Operators */}
         <div className="flex-1 flex flex-col gap-2.5">
           {/* Category Breakdown */}
-          <div className="bg-[var(--color-surface-card)] rounded-xl p-3.5 border border-white/[0.04]">
+          <div className="bg-[var(--color-surface-card)] rounded-xl p-3.5 border border-[var(--color-border-subtle)]">
             <div className="text-xs font-semibold text-[var(--color-text-primary)] mb-2.5">By Category</div>
             <div className="flex flex-col gap-1.5">
               {(categories ?? []).slice(0, 5).map((cat) => (
@@ -110,7 +110,7 @@ function CommandCenter() {
           </div>
 
           {/* Top Operators */}
-          <div className="flex-1 bg-[var(--color-surface-card)] rounded-xl p-3.5 border border-white/[0.04]">
+          <div className="flex-1 bg-[var(--color-surface-card)] rounded-xl p-3.5 border border-[var(--color-border-subtle)]">
             <div className="flex justify-between items-center mb-2.5">
               <span className="text-xs font-semibold text-[var(--color-text-primary)]">Top Operators</span>
               <button onClick={() => navigate({ to: '/operators' })} className="text-[10px] text-[var(--color-accent-blue)]">View all →</button>

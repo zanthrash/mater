@@ -46,13 +46,13 @@ function AiInsights() {
         {/* Left Column */}
         <div className="flex-[3] flex flex-col gap-3">
           {/* Confidence Trend */}
-          <div className="bg-[var(--color-surface-card)] rounded-xl p-3.5 border border-white/[0.04]">
+          <div className="bg-[var(--color-surface-card)] rounded-xl p-3.5 border border-[var(--color-border-subtle)]">
             <div className="text-xs font-semibold text-[var(--color-text-primary)] mb-3">Confidence Trend</div>
             <ResponsiveContainer width="100%" height={120}>
               <LineChart data={insights.confidenceTrend}>
                 <XAxis dataKey="date" tick={{ fontSize: 9, fill: '#475569' }} axisLine={false} tickLine={false} tickFormatter={(v) => new Date(v).toLocaleDateString('en-US', { weekday: 'short' })} />
                 <YAxis tick={{ fontSize: 9, fill: '#475569' }} axisLine={false} tickLine={false} domain={[0.5, 1]} tickFormatter={(v) => `${Math.round(v * 100)}%`} width={35} />
-                <Tooltip contentStyle={{ backgroundColor: '#1E293B', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, fontSize: 11 }} formatter={(v: number) => `${Math.round(v * 100)}%`} />
+                <Tooltip contentStyle={{}} wrapperStyle={{}} cursor={{ fill: 'var(--color-border)' }} formatter={(v: number) => `${Math.round(v * 100)}%`} />
                 <Line type="monotone" dataKey="classification" stroke="#10B981" strokeWidth={2} dot={false} name="Classification" />
                 <Line type="monotone" dataKey="spec" stroke="#3B82F6" strokeWidth={2} dot={false} strokeDasharray="4 3" name="Spec Extraction" />
               </LineChart>
@@ -64,13 +64,13 @@ function AiInsights() {
           </div>
 
           {/* Confidence Distribution */}
-          <div className="bg-[var(--color-surface-card)] rounded-xl p-3.5 border border-white/[0.04]">
+          <div className="bg-[var(--color-surface-card)] rounded-xl p-3.5 border border-[var(--color-border-subtle)]">
             <div className="text-xs font-semibold text-[var(--color-text-primary)] mb-3">Confidence Distribution</div>
             <ResponsiveContainer width="100%" height={90}>
               <BarChart data={insights.confidenceDistribution}>
                 <XAxis dataKey="bucket" tick={{ fontSize: 9, fill: '#475569' }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 9, fill: '#475569' }} axisLine={false} tickLine={false} width={30} />
-                <Tooltip contentStyle={{ backgroundColor: '#1E293B', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, fontSize: 11 }} />
+                <Tooltip contentStyle={{}} wrapperStyle={{}} cursor={{ fill: 'var(--color-border)' }} />
                 <Bar dataKey="count" radius={[3, 3, 0, 0]} fill="#3B82F6">
                   {insights.confidenceDistribution.map((entry, i) => (
                     <rect key={i} fill={bucketColors[entry.bucket] ?? '#3B82F6'} />
@@ -81,7 +81,7 @@ function AiInsights() {
           </div>
 
           {/* Misclassifications */}
-          <div className="flex-1 bg-[var(--color-surface-card)] rounded-xl p-3.5 border border-white/[0.04] overflow-auto">
+          <div className="flex-1 bg-[var(--color-surface-card)] rounded-xl p-3.5 border border-[var(--color-border-subtle)] overflow-auto">
             <div className="text-xs font-semibold text-[var(--color-text-primary)] mb-2.5">Common Misclassifications</div>
             <div className="flex flex-col gap-1.5">
               {insights.misclassifications.slice(0, 5).map((m, i) => (
@@ -101,7 +101,7 @@ function AiInsights() {
         {/* Right Column */}
         <div className="flex-[2] flex flex-col gap-3">
           {/* Accuracy by Category */}
-          <div className="bg-[var(--color-surface-card)] rounded-xl p-3.5 border border-white/[0.04]">
+          <div className="bg-[var(--color-surface-card)] rounded-xl p-3.5 border border-[var(--color-border-subtle)]">
             <div className="text-xs font-semibold text-[var(--color-text-primary)] mb-2.5">Accuracy by Category</div>
             <div className="flex flex-col gap-2">
               {insights.categoryAccuracy.map((cat) => {
@@ -118,7 +118,7 @@ function AiInsights() {
           </div>
 
           {/* AI vs VIN Agreement */}
-          <div className="bg-[var(--color-surface-card)] rounded-xl p-3.5 border border-white/[0.04]">
+          <div className="bg-[var(--color-surface-card)] rounded-xl p-3.5 border border-[var(--color-border-subtle)]">
             <div className="text-xs font-semibold text-[var(--color-text-primary)] mb-2.5">AI vs VIN Agreement</div>
             <div className="flex flex-col gap-1.5">
               {Object.entries(insights.vinAgreement).map(([field, rate]) => {
@@ -136,7 +136,7 @@ function AiInsights() {
           </div>
 
           {/* VIN Sources */}
-          <div className="flex-1 bg-[var(--color-surface-card)] rounded-xl p-3.5 border border-white/[0.04]">
+          <div className="flex-1 bg-[var(--color-surface-card)] rounded-xl p-3.5 border border-[var(--color-border-subtle)]">
             <div className="text-xs font-semibold text-[var(--color-text-primary)] mb-2.5">VIN Lookup Sources</div>
             <div className="flex gap-3 items-center mb-2">
               <div className="text-center flex-1"><div className="text-2xl font-bold text-[var(--color-accent-green)]">{Math.round(insights.vinSources.nhtsa * 100)}%</div><div className="text-[9px] text-[var(--color-text-muted)]">NHTSA</div></div>
@@ -146,7 +146,7 @@ function AiInsights() {
             <div className="h-2 flex rounded-full overflow-hidden">
               <div style={{ width: `${insights.vinSources.nhtsa * 100}%` }} className="bg-[var(--color-accent-green)]" />
               <div style={{ width: `${insights.vinSources.claude * 100}%` }} className="bg-[var(--color-accent-purple)]" />
-              <div style={{ width: `${insights.vinSources.none * 100}%` }} className="bg-slate-700" />
+              <div style={{ width: `${insights.vinSources.none * 100}%` }} className="bg-[var(--color-text-muted)]/40" />
             </div>
           </div>
         </div>

@@ -61,7 +61,7 @@ function AssetDetail() {
           )}
           {editing && (
             <>
-              <button onClick={() => setEditing(false)} className="text-[10px] text-[var(--color-text-muted)] px-3 py-1.5 rounded-md border border-white/[0.08]">Cancel</button>
+              <button onClick={() => setEditing(false)} className="text-[10px] text-[var(--color-text-muted)] px-3 py-1.5 rounded-md border border-[var(--color-border)]">Cancel</button>
               <button onClick={handleSave} className="text-[10px] text-white bg-[var(--color-accent-blue)] px-3 py-1.5 rounded-md">Save</button>
             </>
           )}
@@ -73,7 +73,7 @@ function AssetDetail() {
         {/* Left: Photos + Specs */}
         <div className="flex-[3] flex flex-col gap-3">
           {/* Photo Gallery */}
-          <div className="bg-[var(--color-surface-card)] rounded-xl p-3.5 border border-white/[0.04]">
+          <div className="bg-[var(--color-surface-card)] rounded-xl p-3.5 border border-[var(--color-border-subtle)]">
             <div className="text-xs font-semibold text-[var(--color-text-primary)] mb-2.5">Photos <span className="text-[var(--color-text-muted)] font-normal">({asset.photos.length})</span></div>
             <div className="flex gap-2">
               {heroPhoto && (
@@ -94,7 +94,7 @@ function AssetDetail() {
           </div>
 
           {/* Core Specs */}
-          <div className="bg-[var(--color-surface-card)] rounded-xl p-3.5 border border-white/[0.04]">
+          <div className="bg-[var(--color-surface-card)] rounded-xl p-3.5 border border-[var(--color-border-subtle)]">
             <div className="flex justify-between items-center mb-2.5">
               <span className="text-xs font-semibold text-[var(--color-text-primary)]">Core Specifications</span>
               {confidence !== null && <span className="text-[9px] text-[var(--color-accent-purple)] bg-[var(--color-accent-purple)]/10 px-2 py-0.5 rounded">🤖 AI Extracted · <ConfidenceBadge value={confidence} /></span>}
@@ -104,7 +104,7 @@ function AssetDetail() {
                 <div key={label} className="bg-[var(--color-surface-primary)] rounded-lg p-2.5">
                   <div className="text-[8px] text-[var(--color-text-muted)] uppercase tracking-wider">{label}</div>
                   {editing ? (
-                    <input value={String(editData[label.toLowerCase()] ?? value ?? '')} onChange={(e) => setEditData({ ...editData, [label.toLowerCase()]: e.target.value })} className="text-xs text-[var(--color-text-primary)] bg-transparent border-b border-white/[0.1] w-full mt-1 outline-none" />
+                    <input value={String(editData[label.toLowerCase()] ?? value ?? '')} onChange={(e) => setEditData({ ...editData, [label.toLowerCase()]: e.target.value })} className="text-xs text-[var(--color-text-primary)] bg-transparent border-b border-[var(--color-border)] w-full mt-1 outline-none" />
                   ) : (
                     <div className="text-xs text-[var(--color-text-primary)] font-medium mt-0.5">{value ?? '—'}</div>
                   )}
@@ -115,7 +115,7 @@ function AssetDetail() {
 
           {/* Type-Specific Specs */}
           {Object.keys(asset.type_specific_specs).length > 0 && (
-            <div className="bg-[var(--color-surface-card)] rounded-xl p-3.5 border border-white/[0.04]">
+            <div className="bg-[var(--color-surface-card)] rounded-xl p-3.5 border border-[var(--color-border-subtle)]">
               <div className="text-xs font-semibold text-[var(--color-text-primary)] mb-2.5">Type-Specific Specs</div>
               <div className="grid grid-cols-2 gap-2">
                 {Object.entries(asset.type_specific_specs).map(([key, value]) => (
@@ -132,7 +132,7 @@ function AssetDetail() {
         {/* Right: Meta + Timeline */}
         <div className="flex-[2] flex flex-col gap-3">
           {/* Classification */}
-          <div className="bg-[var(--color-surface-card)] rounded-xl p-3.5 border border-white/[0.04]">
+          <div className="bg-[var(--color-surface-card)] rounded-xl p-3.5 border border-[var(--color-border-subtle)]">
             <div className="text-xs font-semibold text-[var(--color-text-primary)] mb-2.5">Classification</div>
             <div className="flex gap-1.5 items-center mb-2">
               {[asset.category, asset.type, asset.subtype].filter(Boolean).map((val, i) => (
@@ -154,7 +154,7 @@ function AssetDetail() {
           </div>
 
           {/* VIN */}
-          <div className="bg-[var(--color-surface-card)] rounded-xl p-3.5 border border-white/[0.04]">
+          <div className="bg-[var(--color-surface-card)] rounded-xl p-3.5 border border-[var(--color-border-subtle)]">
             <div className="text-xs font-semibold text-[var(--color-text-primary)] mb-2">Identification</div>
             <div className="bg-[var(--color-surface-primary)] rounded-lg p-2.5">
               <div className="text-[8px] text-[var(--color-text-muted)] uppercase">VIN / Serial</div>
@@ -163,29 +163,29 @@ function AssetDetail() {
           </div>
 
           {/* Yard Info */}
-          <div className="bg-[var(--color-surface-card)] rounded-xl p-3.5 border border-white/[0.04]">
+          <div className="bg-[var(--color-surface-card)] rounded-xl p-3.5 border border-[var(--color-border-subtle)]">
             <div className="text-xs font-semibold text-[var(--color-text-primary)] mb-2">Yard Info</div>
             <div className="grid grid-cols-2 gap-1.5">
               <div className="bg-[var(--color-surface-primary)] rounded-lg p-2">
                 <div className="text-[8px] text-[var(--color-text-muted)]">Lot #</div>
-                <div className="text-xs text-[var(--color-text-primary)] mt-0.5">{editing ? <input value={String(editData.lot_number ?? asset.lot_number ?? '')} onChange={(e) => setEditData({ ...editData, lot_number: e.target.value })} className="bg-transparent border-b border-white/[0.1] w-full outline-none" /> : (asset.lot_number ?? '—')}</div>
+                <div className="text-xs text-[var(--color-text-primary)] mt-0.5">{editing ? <input value={String(editData.lot_number ?? asset.lot_number ?? '')} onChange={(e) => setEditData({ ...editData, lot_number: e.target.value })} className="bg-transparent border-b border-[var(--color-border)] w-full outline-none" /> : (asset.lot_number ?? '—')}</div>
               </div>
               <div className="bg-[var(--color-surface-primary)] rounded-lg p-2">
                 <div className="text-[8px] text-[var(--color-text-muted)]">Location</div>
-                <div className="text-xs text-[var(--color-text-primary)] mt-0.5">{editing ? <input value={String(editData.yard_location ?? asset.yard_location ?? '')} onChange={(e) => setEditData({ ...editData, yard_location: e.target.value })} className="bg-transparent border-b border-white/[0.1] w-full outline-none" /> : (asset.yard_location ?? '—')}</div>
+                <div className="text-xs text-[var(--color-text-primary)] mt-0.5">{editing ? <input value={String(editData.yard_location ?? asset.yard_location ?? '')} onChange={(e) => setEditData({ ...editData, yard_location: e.target.value })} className="bg-transparent border-b border-[var(--color-border)] w-full outline-none" /> : (asset.yard_location ?? '—')}</div>
               </div>
               <div className="bg-[var(--color-surface-primary)] rounded-lg p-2 col-span-2">
                 <div className="text-[8px] text-[var(--color-text-muted)]">Consignor</div>
-                <div className="text-xs text-[var(--color-text-primary)] mt-0.5">{editing ? <input value={String(editData.consignor ?? asset.consignor ?? '')} onChange={(e) => setEditData({ ...editData, consignor: e.target.value })} className="bg-transparent border-b border-white/[0.1] w-full outline-none" /> : (asset.consignor ?? '—')}</div>
+                <div className="text-xs text-[var(--color-text-primary)] mt-0.5">{editing ? <input value={String(editData.consignor ?? asset.consignor ?? '')} onChange={(e) => setEditData({ ...editData, consignor: e.target.value })} className="bg-transparent border-b border-[var(--color-border)] w-full outline-none" /> : (asset.consignor ?? '—')}</div>
               </div>
             </div>
           </div>
 
           {/* Intake Timeline */}
-          <div className="bg-[var(--color-surface-card)] rounded-xl p-3.5 border border-white/[0.04]">
+          <div className="bg-[var(--color-surface-card)] rounded-xl p-3.5 border border-[var(--color-border-subtle)]">
             <div className="text-xs font-semibold text-[var(--color-text-primary)] mb-2.5">Intake History</div>
             <div className="flex flex-col gap-0 relative pl-4">
-              <div className="absolute left-[5px] top-1.5 bottom-1.5 w-px bg-white/[0.08]" />
+              <div className="absolute left-[5px] top-1.5 bottom-1.5 w-px bg-[var(--color-border)]" />
               {(events ?? []).map((evt) => (
                 <div key={evt.id} className="relative pb-3">
                   <div className="absolute left-[-13px] top-1 w-2 h-2 bg-[var(--color-accent-blue)] rounded-full border-2 border-[var(--color-surface-card)]" />
