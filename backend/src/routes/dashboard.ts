@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import { config } from '../config.js'
 import { DashboardRepository } from '../repositories/DashboardRepository.js'
 import type { Period } from '../repositories/DashboardRepository.js'
+import { AiUsageRepository } from '../repositories/AiUsageRepository.js'
 
 interface PeriodQuery {
   period?: string
@@ -16,6 +17,7 @@ interface ActivityQuery {
 export const dashboardRoute: FastifyPluginAsync = async (fastify) => {
   const supabase = createClient(config.supabaseUrl!, config.supabaseKey!)
   const repo = new DashboardRepository(supabase)
+  const usageRepo = new AiUsageRepository(supabase)
 
   const parsePeriod = (raw?: string): Period => {
     if (raw === 'today' || raw === 'week' || raw === 'month') return raw
@@ -71,6 +73,17 @@ export const dashboardRoute: FastifyPluginAsync = async (fastify) => {
       const period = parsePeriod(request.query.period)
       const insights = await repo.getAiInsights(period)
       return reply.send(insights)
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error'
+      return reply.status(500).send({ error: message })
+    }
+  })
+
+  fastify.get<{ Querystring: PeriodQuery }>('/api/dashboard/token-usage', async (request, reply) => {
+    try {
+      const period = parsePeriod(request.query.period)
+      const usage = await usageRepo.getTokenUsage(period)
+      return reply.send(usage)
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Unknown error'
       return reply.status(500).send({ error: message })

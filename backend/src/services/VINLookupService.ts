@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk'
 import axios from 'axios'
+import type { WithUsage } from './types.js'
 
 export interface VinResult {
   make: string | null
@@ -31,7 +32,9 @@ function parseGvwr(value: string | null | undefined): number | null {
 export class VINLookupService {
   constructor(private readonly anthropic: Anthropic) {}
 
-  async lookupVin(vin: string): Promise<VinResult> {
+  async lookupVin(vin: string): Promise<WithUsage<VinResult>> {
+    const zeroUsage = { input_tokens: 0, output_tokens: 0 }
+
     try {
       const url = `https://vpic.nhtsa.dot.gov/api/vehicles/decodevin/${vin}?format=json`
       const response = await axios.get<NhtsaResponse>(url)
@@ -47,13 +50,16 @@ export class VINLookupService {
         const yearStr = get('Model Year')
         const year = yearStr ? parseInt(yearStr, 10) : null
         return {
-          make,
-          model: get('Model'),
-          year: isNaN(year as number) ? null : year,
-          engineType: get('Fuel Type - Primary'),
-          transmission: get('Transmission Style'),
-          gvwLbs: parseGvwr(get('Gross Vehicle Weight Rating From')),
-          source: 'nhtsa',
+          result: {
+            make,
+            model: get('Model'),
+            year: isNaN(year as number) ? null : year,
+            engineType: get('Fuel Type - Primary'),
+            transmission: get('Transmission Style'),
+            gvwLbs: parseGvwr(get('Gross Vehicle Weight Rating From')),
+            source: 'nhtsa',
+          },
+          usage: zeroUsage,
         }
       }
     } catch {
@@ -72,6 +78,7 @@ export class VINLookupService {
       ],
     })
 
+    const usage = { input_tokens: message.usage.input_tokens, output_tokens: message.usage.output_tokens }
     const textContent = message.content.find((block) => block.type === 'text')
     if (!textContent || textContent.type !== 'text') {
       throw new Error('Claude returned no text content')
@@ -84,13 +91,16 @@ export class VINLookupService {
 
     const parsed = JSON.parse(match[0]) as Omit<VinResult, 'source'>
     return {
-      make: parsed.make ?? null,
-      model: parsed.model ?? null,
-      year: parsed.year ?? null,
-      engineType: parsed.engineType ?? null,
-      transmission: parsed.transmission ?? null,
-      gvwLbs: parsed.gvwLbs ?? null,
-      source: 'claude',
+      result: {
+        make: parsed.make ?? null,
+        model: parsed.model ?? null,
+        year: parsed.year ?? null,
+        engineType: parsed.engineType ?? null,
+        transmission: parsed.transmission ?? null,
+        gvwLbs: parsed.gvwLbs ?? null,
+        source: 'claude',
+      },
+      usage,
     }
   }
 }

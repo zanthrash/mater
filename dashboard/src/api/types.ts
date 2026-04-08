@@ -93,3 +93,18 @@ export interface IntakeEvent {
 }
 
 export type Period = 'today' | 'week' | 'month'
+
+export interface TokenUsageResponse {
+  totalInputTokens: number
+  totalOutputTokens: number
+  totalCostCents: number
+  requestCount: number
+  costOverTime: Array<{ date: string; costCents: number }>
+  usageByOperation: Array<{
+    operation: string
+    inputTokens: number
+    outputTokens: number
+    costCents: number
+    count: number
+  }>
+}

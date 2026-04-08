@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
-import { useAiInsights } from '@/api/hooks'
+import { useAiInsights, useTokenUsage } from '@/api/hooks'
 import type { Period } from '@/api/types'
 import { KPICard } from '@/components/KPICard'
 import { PeriodToggle } from '@/components/PeriodToggle'
@@ -17,6 +17,7 @@ const bucketColors: Record<string, string> = {
 function AiInsights() {
   const [period, setPeriod] = useState<Period>('week')
   const { data: insights } = useAiInsights(period)
+  const { data: tokenUsage } = useTokenUsage(period)
 
   if (!insights) return <div className="p-4 text-[var(--color-text-muted)]">Loading...</div>
 
@@ -151,6 +152,55 @@ function AiInsights() {
           </div>
         </div>
       </div>
+
+      {/* Token Usage & Cost */}
+      {tokenUsage && (
+        <div className="px-4 pb-4 flex flex-col gap-3">
+          <div className="text-xs font-semibold text-[var(--color-text-secondary)] pt-1">Token Usage & Cost</div>
+
+          {/* KPIs */}
+          <div className="flex gap-2.5">
+            <KPICard label="Total Tokens" value={(tokenUsage.totalInputTokens + tokenUsage.totalOutputTokens).toLocaleString()} />
+            <KPICard label="Total Cost" value={`$${(tokenUsage.totalCostCents / 100).toFixed(4)}`} />
+            <KPICard label="Avg Tokens / Request" value={Math.round((tokenUsage.totalInputTokens + tokenUsage.totalOutputTokens) / Math.max(tokenUsage.requestCount, 1)).toLocaleString()} />
+            <KPICard label="API Requests" value={tokenUsage.requestCount.toLocaleString()} />
+          </div>
+
+          {/* Charts */}
+          <div className="flex gap-3">
+            {/* Cost over time */}
+            <div className="flex-[3] bg-[var(--color-surface-card)] rounded-xl p-3.5 border border-[var(--color-border-subtle)]">
+              <div className="text-xs font-semibold text-[var(--color-text-primary)] mb-3">Cost Over Time</div>
+              <ResponsiveContainer width="100%" height={120}>
+                <LineChart data={tokenUsage.costOverTime}>
+                  <XAxis dataKey="date" tick={{ fontSize: 9, fill: '#475569' }} axisLine={false} tickLine={false} tickFormatter={(v) => new Date(v).toLocaleDateString('en-US', { weekday: 'short' })} />
+                  <YAxis tick={{ fontSize: 9, fill: '#475569' }} axisLine={false} tickLine={false} width={45} tickFormatter={(v) => `$${(v / 100).toFixed(3)}`} />
+                  <Tooltip contentStyle={{}} wrapperStyle={{}} cursor={{ fill: 'var(--color-border)' }} formatter={(v: number) => [`$${(v / 100).toFixed(4)}`, 'Cost']} />
+                  <Line type="monotone" dataKey="costCents" stroke="#10B981" strokeWidth={2} dot={false} name="Cost" />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Usage by operation */}
+            <div className="flex-[2] bg-[var(--color-surface-card)] rounded-xl p-3.5 border border-[var(--color-border-subtle)]">
+              <div className="text-xs font-semibold text-[var(--color-text-primary)] mb-3">Tokens by Operation</div>
+              <ResponsiveContainer width="100%" height={120}>
+                <BarChart data={tokenUsage.usageByOperation}>
+                  <XAxis dataKey="operation" tick={{ fontSize: 9, fill: '#475569' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 9, fill: '#475569' }} axisLine={false} tickLine={false} width={35} tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v} />
+                  <Tooltip contentStyle={{}} wrapperStyle={{}} cursor={{ fill: 'var(--color-border)' }} />
+                  <Bar dataKey="inputTokens" stackId="a" fill="#3B82F6" name="Input" radius={[0, 0, 0, 0]} />
+                  <Bar dataKey="outputTokens" stackId="a" fill="#10B981" name="Output" radius={[3, 3, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+              <div className="flex gap-4 mt-1 pl-9">
+                <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-sm bg-[#3B82F6]" /><span className="text-[8px] text-[var(--color-text-secondary)]">Input</span></div>
+                <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-sm bg-[#10B981]" /><span className="text-[8px] text-[var(--color-text-secondary)]">Output</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

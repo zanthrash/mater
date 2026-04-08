@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk'
+import type { WithUsage } from './types.js'
 
 export interface ImageInput {
   base64: string
@@ -64,7 +65,7 @@ const NULL_ANALYSIS_RESULT: AnalysisResult = {
 export class ImageAnalysisService {
   constructor(private readonly anthropic: Anthropic) {}
 
-  async classifyEquipment(images: ImageInput[], vinSerial: string | null): Promise<ClassificationResult> {
+  async classifyEquipment(images: ImageInput[], vinSerial: string | null): Promise<WithUsage<ClassificationResult>> {
     const imageBlocks: Anthropic.ImageBlockParam[] = images.map((image) => ({
       type: 'image',
       source: {
@@ -106,24 +107,25 @@ export class ImageAnalysisService {
       ],
     })
 
+    const usage = { input_tokens: response.usage.input_tokens, output_tokens: response.usage.output_tokens }
     const textContent = response.content.find((block) => block.type === 'text')
     if (!textContent || textContent.type !== 'text') {
-      return { ...NULL_CLASSIFICATION }
+      return { result: { ...NULL_CLASSIFICATION }, usage }
     }
 
     try {
       const match = textContent.text.match(/\{[\s\S]*\}/)
       if (!match) {
-        return { ...NULL_CLASSIFICATION }
+        return { result: { ...NULL_CLASSIFICATION }, usage }
       }
       const parsed = JSON.parse(match[0]) as ClassificationResult
-      return parsed
+      return { result: parsed, usage }
     } catch {
-      return { ...NULL_CLASSIFICATION }
+      return { result: { ...NULL_CLASSIFICATION }, usage }
     }
   }
 
-  async analyzeImages(images: ImageInput[], taxonomy: TaxonomyContext | null): Promise<AnalysisResult> {
+  async analyzeImages(images: ImageInput[], taxonomy: TaxonomyContext | null): Promise<WithUsage<AnalysisResult>> {
     const imageBlocks: Anthropic.ImageBlockParam[] = images.map((image) => ({
       type: 'image',
       source: {
@@ -171,24 +173,25 @@ export class ImageAnalysisService {
       ],
     })
 
+    const usage = { input_tokens: response.usage.input_tokens, output_tokens: response.usage.output_tokens }
     const textContent = response.content.find((block) => block.type === 'text')
     if (!textContent || textContent.type !== 'text') {
-      return { ...NULL_ANALYSIS_RESULT }
+      return { result: { ...NULL_ANALYSIS_RESULT }, usage }
     }
 
     try {
       const match = textContent.text.match(/\{[\s\S]*\}/)
       if (!match) {
-        return { ...NULL_ANALYSIS_RESULT }
+        return { result: { ...NULL_ANALYSIS_RESULT }, usage }
       }
       const parsed = JSON.parse(match[0]) as AnalysisResult
-      return parsed
+      return { result: parsed, usage }
     } catch {
-      return { ...NULL_ANALYSIS_RESULT }
+      return { result: { ...NULL_ANALYSIS_RESULT }, usage }
     }
   }
 
-  async extractVinFromImage(base64Image: string): Promise<string> {
+  async extractVinFromImage(base64Image: string): Promise<WithUsage<string>> {
     const response = await this.anthropic.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 256,
@@ -214,6 +217,7 @@ export class ImageAnalysisService {
       ],
     })
 
+    const usage = { input_tokens: response.usage.input_tokens, output_tokens: response.usage.output_tokens }
     const textContent = response.content.find((block) => block.type === 'text')
     if (!textContent || textContent.type !== 'text') {
       throw new VinExtractionError('No text response from API')
@@ -224,7 +228,7 @@ export class ImageAnalysisService {
       throw new VinExtractionError('No VIN found in image')
     }
 
-    return vin
+    return { result: vin, usage }
   }
 }
 

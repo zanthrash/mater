@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from './client'
-import type { DashboardStats, IntakeVolumeBucket, CategoryCount, OperatorStats, AiInsights, ActivityEvent, Asset, IntakeEvent, Period } from './types'
+import type { DashboardStats, IntakeVolumeBucket, CategoryCount, OperatorStats, AiInsights, ActivityEvent, Asset, IntakeEvent, Period, TokenUsageResponse } from './types'
 
 export function useDashboardStats(period: Period) {
   return useQuery({
@@ -47,6 +47,16 @@ export function useAiInsights(period: Period) {
     queryKey: ['dashboard', 'ai-insights', period],
     queryFn: async () => {
       const { data } = await api.get<AiInsights>('/api/dashboard/ai-insights', { params: { period } })
+      return data
+    },
+  })
+}
+
+export function useTokenUsage(period: Period) {
+  return useQuery({
+    queryKey: ['dashboard', 'token-usage', period],
+    queryFn: async () => {
+      const { data } = await api.get<TokenUsageResponse>('/api/dashboard/token-usage', { params: { period } })
       return data
     },
   })
