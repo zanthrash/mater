@@ -1,23 +1,29 @@
 {
   "expo": {
-    "name": "mater",
-    "slug": "mater",
+    "name": "RBAI",
+    "slug": "rb-ai",
     "version": "1.0.0",
-    "orientation": "portrait",
-    "splash": {
-      "backgroundColor": "#0F172A",
-      "resizeMode": "contain"
-    },
     "ios": {
-      "supportsTablet": true
+      "bundleIdentifier": "com.zanthrash.rbai",
+      "buildNumber": "1",
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "RBAI needs camera access to photograph equipment",
+        "NSLocationWhenInUseUsageDescription": "RBAI uses your location to tag equipment intake location",
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#0F172A"
       }
     },
-    "plugins": [
-      "expo-font"
-    ]
+    "plugins": ["expo-font"],
+    "extra": {
+      "apiBaseUrl": "https://backend-old-grass-710.fly.dev",
+      "eas": {
+        "projectId": "f71133b9-fb12-49af-9e59-b28e3cfe1b32"
+      }
+    }
   }
 }

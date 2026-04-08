@@ -206,7 +206,7 @@ export default ({ config }) => ({
 
 Set during EAS build:
 ```bash
-API_BASE_URL=https://mater-backend.fly.dev eas build --platform ios --profile production
+API_BASE_URL=https://backend-old-grass-710.fly.dev eas build --platform ios --profile production
 ```
 
 #### 3.4 Build & Submit to TestFlight

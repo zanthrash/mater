@@ -1,4 +1,5 @@
 import axios, { AxiosInstance } from 'axios'
+import Constants from 'expo-constants'
 
 export interface ServiceError {
   message: string
@@ -120,10 +121,14 @@ export interface TaxonomyCategoryNode {
   types: TaxonomyTypeNode[]
 }
 
+const API_BASE_URL = Constants.expoConfig?.extra?.apiBaseUrl ?? 'http://localhost:3000'
+
 export class APIClient {
   private readonly http: AxiosInstance
 
-  constructor(baseURL: string = 'https://backend-old-grass-710.fly.dev') {
+  // In constructor:
+
+  constructor(baseURL: string = API_BASE_URL) {
     this.http = axios.create({ baseURL })
   }
 
