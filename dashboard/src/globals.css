@@ -153,6 +153,15 @@
   }
 }
 
+/* Photo lightbox fade-in */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.animate-fade-in {
+  animation: fade-in 200ms ease-out;
+}
+
 /* Recharts tooltip theming */
 .recharts-default-tooltip {
   background-color: var(--color-surface-card) !important;

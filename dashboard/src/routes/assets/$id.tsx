@@ -3,6 +3,7 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useAsset, useIntakeEvents, useUpdateAsset } from '@/api/hooks'
 import { StatusBadge } from '@/components/StatusBadge'
 import { ConfidenceBadge } from '@/components/ConfidenceBadge'
+import { PhotoGallery } from '@/components/PhotoGallery'
 
 export const Route = createFileRoute('/assets/$id')({
   component: AssetDetail,
@@ -24,9 +25,6 @@ function AssetDetail() {
     setEditing(false)
     setEditData({})
   }
-
-  const heroPhoto = asset.photos[0]
-  const otherPhotos = asset.photos.slice(1)
 
   const aiTax = events?.[0]?.ai_taxonomy_result as Record<string, unknown> | null | undefined
   const taxData = aiTax?.taxonomy as Record<string, unknown> | undefined
@@ -73,25 +71,7 @@ function AssetDetail() {
         {/* Left: Photos + Specs */}
         <div className="flex-[3] flex flex-col gap-3">
           {/* Photo Gallery */}
-          <div className="bg-[var(--color-surface-card)] rounded-xl p-3.5 border border-[var(--color-border-subtle)]">
-            <div className="text-xs font-semibold text-[var(--color-text-primary)] mb-2.5">Photos <span className="text-[var(--color-text-muted)] font-normal">({asset.photos.length})</span></div>
-            <div className="flex gap-2">
-              {heroPhoto && (
-                <div className="flex-[2] bg-[var(--color-surface-primary)] rounded-lg h-40 flex items-center justify-center border-2 border-[var(--color-accent-blue)] relative overflow-hidden">
-                  <img src={heroPhoto.url} alt={heroPhoto.label} className="w-full h-full object-cover" />
-                  <span className="absolute top-1.5 left-1.5 bg-[var(--color-accent-blue)] text-white px-1.5 py-0.5 rounded text-[8px]">Hero</span>
-                </div>
-              )}
-              <div className="flex-[3] flex flex-wrap gap-1">
-                {otherPhotos.map((photo, i) => (
-                  <div key={i} className="w-[calc(33.33%-3px)] bg-[var(--color-surface-primary)] rounded-md h-[52px] relative overflow-hidden">
-                    <img src={photo.url} alt={photo.label} className="w-full h-full object-cover" />
-                    <span className="absolute bottom-0.5 left-1 text-[7px] text-[var(--color-text-secondary)]">{photo.label}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
+          <PhotoGallery photos={asset.photos} />
 
           {/* Core Specs */}
           <div className="bg-[var(--color-surface-card)] rounded-xl p-3.5 border border-[var(--color-border-subtle)]">
