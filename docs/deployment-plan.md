@@ -5,8 +5,8 @@
 ## Architecture Overview
 
 ```
-Mobile (Expo/iOS)          Backend (Fly.io)
-  TestFlight ──────────> Fastify API (Node.js)
+Mobile (Expo/iOS)          Backend (Fly.io)          Dashboard (Vercel)
+  TestFlight ──────────> Fastify API (Node.js) <──── React SPA (Vite)
                               │
                     ┌─────────┼─────────┐
                     ▼         ▼         ▼
@@ -274,6 +274,7 @@ Requires TestFlight review (~24-48 hrs).
 | Mobile JS/TS | `eas update --branch production` | Reopen app | None |
 | Mobile native deps | `eas build` + `eas submit` | Update TestFlight | None (old version works) |
 | DB schema | Supabase Dashboard or `supabase db push` | None | Depends on migration |
+| Dashboard JS/TS | `git push` to main | Refresh browser | None (instant) |
 
 ---
 
@@ -292,6 +293,68 @@ Requires TestFlight review (~24-48 hrs).
 |---|---|
 | `API_BASE_URL` | `https://mater-backend.fly.dev` |
 
+### Dashboard (Vercel environment variable)
+| Variable | Value |
+|---|---|
+| `VITE_API_URL` | `https://mater-backend.fly.dev` |
+
+---
+
+## 8. Dashboard Deployment (Vercel)
+
+### Why Vercel
+- Zero-config Vite/React support — no Dockerfile or nginx needed
+- Free tier is sufficient for demo use
+- Auto preview deploys on PRs
+- Instant rollbacks
+
+### Setup Steps
+
+#### 8.1 Install Vercel CLI & Link Project
+```bash
+npm install -g vercel
+cd dashboard
+vercel link
+```
+Follow the prompts to connect to your Vercel account and create a new project.
+
+#### 8.2 Configure Build Settings
+
+When prompted (or via Vercel dashboard > Settings > Build & Output):
+| Setting | Value |
+|---|---|
+| Framework Preset | Vite |
+| Root Directory | `dashboard` |
+| Build Command | `npm run build` |
+| Output Directory | `dist` |
+
+#### 8.3 Set Environment Variable
+
+```bash
+vercel env add VITE_API_URL production
+# Enter: https://mater-backend.fly.dev
+```
+
+Or via Vercel dashboard > Settings > Environment Variables.
+
+#### 8.4 Configure CORS on Backend
+
+The Fastify backend must allow requests from the Vercel domain. Add your Vercel domain (e.g. `https://mater-dashboard.vercel.app`) to the CORS allowed origins in `backend/src/index.ts` before deploying the dashboard.
+
+#### 8.5 Deploy
+```bash
+cd dashboard
+vercel --prod
+```
+
+Dashboard will be live at `https://mater-dashboard.vercel.app` (or your custom domain).
+
+#### 8.6 Updating the Dashboard
+```bash
+git push origin main
+```
+Vercel auto-deploys on every push to main. No manual steps needed. Rollback via Vercel dashboard > Deployments > Rollback.
+
 ---
 
 ## 6. Cost Estimate
@@ -303,6 +366,7 @@ Requires TestFlight review (~24-48 hrs).
 | Supabase Cloud (free tier) | $0 |
 | EAS Build (free tier: 15 builds/mo) | $0 |
 | EAS Update (free tier) | $0 |
+| Vercel (free tier) | $0 |
 | **Total** | **~$104/yr + ~$5/mo** |
 
 ---
@@ -322,3 +386,7 @@ Requires TestFlight review (~24-48 hrs).
 - [ ] Submit to TestFlight
 - [ ] Add demo testers in App Store Connect
 - [ ] Test full flow: photo capture -> AI analysis -> asset creation
+- [ ] Link `dashboard/` to Vercel project
+- [ ] Set `VITE_API_URL` env var in Vercel to `https://mater-backend.fly.dev`
+- [ ] Configure CORS on backend to allow requests from Vercel domain
+- [ ] Verify dashboard loads and fetches data from backend

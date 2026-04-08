@@ -23,7 +23,7 @@ const statuses = ['all', 'intake', 'needs_review', 'reviewed', 'approved'] as co
 
 function AssetInventory() {
   const { status, category, search: searchParam } = Route.useSearch()
-  const navigate = useNavigate()
+  const navigate = useNavigate({ from: Route.fullPath })
   const [page, setPage] = useState(0)
   const [searchText, setSearchText] = useState(searchParam ?? '')
   const [selected, setSelected] = useState<Set<string>>(new Set())

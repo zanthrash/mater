@@ -123,7 +123,7 @@ export interface TaxonomyCategoryNode {
 export class APIClient {
   private readonly http: AxiosInstance
 
-  constructor(baseURL: string = 'http://192.168.1.23:3000') {
+  constructor(baseURL: string = 'https://backend-old-grass-710.fly.dev') {
     this.http = axios.create({ baseURL })
   }
 
@@ -139,7 +139,10 @@ export class APIClient {
     }
   }
 
-  async analyzeImages(request: { photos: Array<{ base64: string; type: string; mediaType?: string }>; taxonomy?: { category: string; type: string; subtype?: string | null } | null }): Promise<AnalysisResult> {
+  async analyzeImages(request: {
+    photos: Array<{ base64: string; type: string; mediaType?: string }>
+    taxonomy?: { category: string; type: string; subtype?: string | null } | null
+  }): Promise<AnalysisResult> {
     try {
       const response = await this.http.post<AnalysisResult>('/api/analyze/images', request)
       return response.data
@@ -163,9 +166,15 @@ export class APIClient {
     }
   }
 
-  async classifyEquipment(photos: Array<{ base64: string; mediaType?: string }>, vinSerial?: string | null): Promise<ClassificationResult> {
+  async classifyEquipment(
+    photos: Array<{ base64: string; mediaType?: string }>,
+    vinSerial?: string | null
+  ): Promise<ClassificationResult> {
     try {
-      const response = await this.http.post<ClassificationResult>('/api/analyze/classify', { photos, vinSerial })
+      const response = await this.http.post<ClassificationResult>('/api/analyze/classify', {
+        photos,
+        vinSerial,
+      })
       return response.data
     } catch (error) {
       const err = error as import('axios').AxiosError
@@ -211,7 +220,16 @@ export class APIClient {
     }
   }
 
-  async listAssets(params?: { category?: string; type?: string; make?: string; status?: string; search?: string; limit?: number; offset?: number; userId?: string }): Promise<AssetListResponse> {
+  async listAssets(params?: {
+    category?: string
+    type?: string
+    make?: string
+    status?: string
+    search?: string
+    limit?: number
+    offset?: number
+    userId?: string
+  }): Promise<AssetListResponse> {
     try {
       const response = await this.http.get<AssetListResponse>('/api/assets', { params })
       return response.data
