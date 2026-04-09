@@ -12,6 +12,9 @@
     },
     "production": {
       "autoIncrement": true,
+      "env": {
+        "API_BASE_URL": "https://backend-old-grass-710.fly.dev"
+      },
       "ios": {
         "distribution": "store"
       }
