@@ -7,6 +7,7 @@
       "bundleIdentifier": "com.zanthrash.rbai",
       "buildNumber": "1",
       "supportsTablet": true,
+      "icon": "./assets/img/icon.icon",
       "infoPlist": {
         "NSCameraUsageDescription": "RBAI needs camera access to photograph equipment",
         "NSLocationWhenInUseUsageDescription": "RBAI uses your location to tag equipment intake location",

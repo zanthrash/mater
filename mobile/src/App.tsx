@@ -56,6 +56,7 @@ function AppContent() {
   const [history, setHistory] = useState<Screen[]>([])
   const draftChecked = useRef(false)
   const screenRef = useRef<Screen>('home')
+  const classifyRequestId = useRef(0)
 
   screenRef.current = screen
 
@@ -271,6 +272,8 @@ function AppContent() {
           stateManager.saveStep('vin', { overviewBase64: base64 })
           navigate('vin')
           // Fire classification early — gives API the full VIN entry duration to resolve
+          classifyRequestId.current += 1
+          const reqId = classifyRequestId.current
           setClassificationLoading(true)
           client
             .classifyEquipment([{ base64 }])
@@ -282,7 +285,7 @@ function AppContent() {
               // silently fail — fallback checklist will be used
             })
             .finally(() => {
-              setClassificationLoading(false)
+              if (classifyRequestId.current === reqId) setClassificationLoading(false)
             })
         }}
       />
@@ -300,6 +303,8 @@ function AppContent() {
           navigate('taxonomy-validation')
           // Re-classify with VIN for better accuracy only if VIN was provided
           if (vin && vin.trim().length > 0 && overviewBase64) {
+            classifyRequestId.current += 1
+            const reqId = classifyRequestId.current
             setClassificationLoading(true)
             try {
               const result = await client.classifyEquipment([{ base64: overviewBase64 }], vin)
@@ -308,7 +313,7 @@ function AppContent() {
             } catch {
               // Keep whatever result we already have from the earlier call
             } finally {
-              setClassificationLoading(false)
+              if (classifyRequestId.current === reqId) setClassificationLoading(false)
             }
           }
         }}

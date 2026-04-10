@@ -114,7 +114,7 @@ export function TaxonomyValidationScreen({
             {/* Taxonomy card skeleton */}
             <View style={[styles.skeletonCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               {[80, 120, 60].map((w, i) => (
-                <View key={i} style={[styles.skeletonRow, { width: w, backgroundColor: colors.borderLight }]} />
+                <View key={i} style={[styles.skeletonRow, { width: w, backgroundColor: colors.placeholder }]} />
               ))}
             </View>
 
@@ -123,7 +123,7 @@ export function TaxonomyValidationScreen({
 
             {/* Checklist skeleton */}
             <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <View style={[styles.skeletonRow, { width: 110, backgroundColor: colors.borderLight, marginBottom: 6 }]} />
+              <View style={[styles.skeletonRow, { width: 110, backgroundColor: colors.placeholder, marginBottom: 6 }]} />
               <ChecklistSkeleton rows={5} />
             </View>
           </View>

@@ -23,9 +23,9 @@ function SkeletonRow() {
 
   return (
     <Animated.View style={[styles.row, { borderBottomColor: colors.separator, opacity: shimmer }]}>
-      <View style={[styles.circle, { backgroundColor: colors.border }]} />
-      <View style={[styles.textBar, { backgroundColor: colors.surface }]} />
-      <View style={[styles.button, { backgroundColor: colors.surface }]} />
+      <View style={[styles.circle, { backgroundColor: colors.placeholder }]} />
+      <View style={[styles.textBar, { backgroundColor: colors.placeholder }]} />
+      <View style={[styles.button, { backgroundColor: colors.placeholder }]} />
     </Animated.View>
   )
 }

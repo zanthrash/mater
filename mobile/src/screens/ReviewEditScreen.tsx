@@ -140,7 +140,7 @@ function ShimmerRows({ testID }: { testID: string }) {
       {SHIMMER_WIDTHS.map((width, i) => (
         <Animated.View
           key={i}
-          style={[styles.shimmerRow, { backgroundColor: colors.surface, width }, { opacity: shimmer }]}
+          style={[styles.shimmerRow, { backgroundColor: colors.placeholder, width }, { opacity: shimmer }]}
         />
       ))}
     </View>
