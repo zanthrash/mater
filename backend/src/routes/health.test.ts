@@ -1,6 +1,14 @@
 import { describe, it, expect, vi } from 'vitest'
 import { buildApp } from '../app.js'
 
+vi.mock('../config.js', () => ({
+  config: {
+    supabaseUrl: 'http://localhost:54321',
+    supabaseKey: 'test-service-key',
+    anthropicApiKey: 'test-anthropic-key',
+  },
+}))
+
 vi.mock('@supabase/supabase-js', () => ({ createClient: vi.fn(() => ({})) }))
 
 describe('GET /health', () => {

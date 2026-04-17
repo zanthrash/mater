@@ -4,6 +4,8 @@ import { config } from '../config.js'
 import { AssetRepository, NotFoundError } from '../repositories/AssetRepository.js'
 import { PhotoStorageService } from '../services/PhotoStorageService.js'
 import { UserRepository } from '../repositories/UserRepository.js'
+import { PendingVoiceNoteRepository } from '../repositories/PendingVoiceNoteRepository.js'
+import { VoiceNoteStorageService } from '../services/VoiceNoteStorageService.js'
 
 interface PhotoInput {
   base64: string
@@ -34,6 +36,7 @@ interface PostBody {
   aiAnalysisResult?: Record<string, unknown> | null
   vinLookupResult?: Record<string, unknown> | null
   aiTaxonomyResult?: Record<string, unknown> | null
+  voiceNoteSessionId?: string
 }
 
 interface IdParams {
@@ -56,6 +59,8 @@ export const assetsRoute: FastifyPluginAsync = async (fastify) => {
   const repo = new AssetRepository(supabase)
   const userRepo = new UserRepository(supabase)
   const photoService = new PhotoStorageService(supabase)
+  const pendingVoiceNoteRepo = new PendingVoiceNoteRepository(supabase)
+  const voiceNoteStorage = new VoiceNoteStorageService(supabase)
 
   // POST /api/assets
   fastify.post<{ Body: PostBody }>(
@@ -99,6 +104,7 @@ export const assetsRoute: FastifyPluginAsync = async (fastify) => {
             aiAnalysisResult: { type: ['object', 'null'] },
             vinLookupResult: { type: ['object', 'null'] },
             aiTaxonomyResult: { type: ['object', 'null'] },
+            voiceNoteSessionId: { type: 'string' },
           },
         },
       },
@@ -133,6 +139,7 @@ export const assetsRoute: FastifyPluginAsync = async (fastify) => {
           yard_location: body.yardMetadata?.yardLocation ?? null,
           consignor: body.yardMetadata?.consignor ?? null,
           photos: [],
+          voice_notes: [],
           status: 'intake',
           user_id: body.userId ?? null,
         })
@@ -147,7 +154,27 @@ export const assetsRoute: FastifyPluginAsync = async (fastify) => {
         }))
 
         // 3. Update asset with photos
-        const updatedAsset = await repo.update(asset.id, { photos: storedPhotos })
+        let updatedAsset = await repo.update(asset.id, { photos: storedPhotos })
+
+        // 3b. Move voice notes from temp to asset path
+        if (body.voiceNoteSessionId) {
+          const pendingNotes = await pendingVoiceNoteRepo.findBySessionId(body.voiceNoteSessionId)
+          if (pendingNotes.length > 0) {
+            const voiceNotes = await Promise.all(
+              pendingNotes.map(async (note) => {
+                const url = await voiceNoteStorage.moveToAsset(note.temp_path, asset.id)
+                return {
+                  url,
+                  transcript: note.transcript,
+                  duration_seconds: note.duration_seconds,
+                  recorded_at: note.recorded_at,
+                }
+              })
+            )
+            updatedAsset = await repo.update(asset.id, { voice_notes: voiceNotes })
+            await pendingVoiceNoteRepo.deleteBySessionId(body.voiceNoteSessionId)
+          }
+        }
 
         // 4. Create intake event
         await repo.createIntakeEvent({

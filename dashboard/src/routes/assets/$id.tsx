@@ -4,6 +4,7 @@ import { useAsset, useIntakeEvents, useUpdateAsset } from '@/api/hooks'
 import { StatusBadge } from '@/components/StatusBadge'
 import { ConfidenceBadge } from '@/components/ConfidenceBadge'
 import { PhotoGallery } from '@/components/PhotoGallery'
+import { VoiceNotesCard } from '@/components/VoiceNotesCard'
 
 export const Route = createFileRoute('/assets/$id')({
   component: AssetDetail,
@@ -160,6 +161,11 @@ function AssetDetail() {
               </div>
             </div>
           </div>
+
+          {/* Voice Notes */}
+          {asset.voice_notes && asset.voice_notes.length > 0 && (
+            <VoiceNotesCard notes={asset.voice_notes} />
+          )}
 
           {/* Intake Timeline */}
           <div className="bg-[var(--color-surface-card)] rounded-xl p-3.5 border border-[var(--color-border-subtle)]">

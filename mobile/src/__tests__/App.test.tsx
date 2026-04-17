@@ -8,6 +8,20 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
   removeItem: jest.fn().mockResolvedValue(undefined),
 }))
 
+jest.mock('expo-av', () => ({
+  Audio: {
+    requestPermissionsAsync: jest.fn().mockResolvedValue({ status: 'granted' }),
+    setAudioModeAsync: jest.fn().mockResolvedValue(undefined),
+    Recording: {
+      createAsync: jest.fn(),
+    },
+    RecordingOptionsPresets: { HIGH_QUALITY: {} },
+    Sound: {
+      createAsync: jest.fn(),
+    },
+  },
+}))
+
 jest.mock('expo-location', () => ({
   requestForegroundPermissionsAsync: jest.fn().mockResolvedValue({ status: 'denied' }),
   getCurrentPositionAsync: jest.fn(),

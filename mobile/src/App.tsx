@@ -24,6 +24,16 @@ import { WizardStateManager } from './state/WizardStateManager'
 import type { AssetPhoto, IntakeDraft } from './state/WizardStateManager'
 import { APIClient } from './services/APIClient'
 import type { Asset, VinResult, ClassificationResult, AnalysisResult, TaxonomyCategoryNode } from './services/APIClient'
+import type { PendingVoiceNote } from './services/VoiceNoteUploader'
+import { VoiceNoteUploader } from './services/VoiceNoteUploader'
+import { offlineQueue } from './services/OfflineVoiceNoteQueue'
+
+function generateUUID() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0
+    return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16)
+  })
+}
 import * as Location from 'expo-location'
 
 type Screen = 'home' | 'asset-detail' | 'overview' | 'vin' | 'taxonomy-validation' | 'guided-photos' | 'review' | 'submit-success'
@@ -54,6 +64,8 @@ function AppContent() {
   const [aiAnalysisError, setAiAnalysisError] = useState(false)
   const [submitAsset, setSubmitAsset] = useState<Asset | null>(null)
   const [history, setHistory] = useState<Screen[]>([])
+  const [voiceNoteSessionId, setVoiceNoteSessionId] = useState<string>(() => generateUUID())
+  const [voiceNotes, setVoiceNotes] = useState<PendingVoiceNote[]>([])
   const draftChecked = useRef(false)
   const screenRef = useRef<Screen>('home')
   const classifyRequestId = useRef(0)
@@ -140,6 +152,8 @@ function AppContent() {
     setAiAnalysisError(false)
     setSubmitAsset(null)
     setHistory([])
+    setVoiceNoteSessionId(generateUUID())
+    setVoiceNotes([])
     setScreen('home')
     stateManager.clearDraft()
     loadAssets()
@@ -405,6 +419,18 @@ function AppContent() {
         photos={photos}
         taxonomyTree={taxonomyTree}
         onSubmit={async (reviewData) => {
+          // Guard: flush offline voice note queue before submit
+          const queuedItems = await offlineQueue.getAll()
+          if (queuedItems.length > 0) {
+            const voiceUploader = new VoiceNoteUploader()
+            await offlineQueue.processQueue((sid, uri, dur) => voiceUploader.upload(sid, uri, dur))
+            const remaining = await offlineQueue.getAll()
+            if (remaining.length > 0) {
+              Alert.alert('Offline voice notes pending', 'Some voice notes could not be uploaded. Please connect to the internet and try again.')
+              return
+            }
+          }
+
           let gpsLat: number | undefined
           let gpsLon: number | undefined
           try {
@@ -437,6 +463,7 @@ function AppContent() {
             aiAnalysisResult: aiSpecResult as Record<string, unknown> | null ?? null,
             vinLookupResult: vinData?.result as Record<string, unknown> | null ?? null,
             aiTaxonomyResult: classificationResult as Record<string, unknown> | null ?? null,
+            voiceNoteSessionId: voiceNotes.length > 0 ? voiceNoteSessionId : undefined,
           })
 
           await stateManager.clearDraft()
@@ -446,6 +473,9 @@ function AppContent() {
         aiLoading={aiAnalysisLoading}
         aiError={aiAnalysisError}
         onRetryAnalysis={retryAnalysis}
+        voiceNoteSessionId={voiceNoteSessionId}
+        voiceNotes={voiceNotes}
+        onVoiceNotesChange={setVoiceNotes}
         onBack={goBack}
         onRestart={resetAll}
       />

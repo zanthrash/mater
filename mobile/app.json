@@ -11,6 +11,7 @@
       "infoPlist": {
         "NSCameraUsageDescription": "RBAI needs camera access to photograph equipment",
         "NSLocationWhenInUseUsageDescription": "RBAI uses your location to tag equipment intake location",
+        "NSMicrophoneUsageDescription": "RBAI needs microphone access to record voice notes during equipment inspection",
         "ITSAppUsesNonExemptEncryption": false
       }
     },
@@ -19,7 +20,7 @@
         "backgroundColor": "#0F172A"
       }
     },
-    "plugins": ["expo-font"],
+    "plugins": ["expo-font", "expo-av"],
     "extra": {
       "apiBaseUrl": "https://backend-old-grass-710.fly.dev",
       "eas": {

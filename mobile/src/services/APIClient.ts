@@ -66,6 +66,7 @@ export interface Asset {
   yard_location: string | null
   consignor: string | null
   photos: Array<{ url: string; label: string; type: 'guided' | 'extra' }>
+  voice_notes: Array<{ url: string; transcript: string | null; duration_seconds: number; recorded_at: string }>
   status: string
   user_id: string | null
 }
@@ -103,6 +104,7 @@ export interface CreateAssetRequest {
   aiAnalysisResult?: Record<string, unknown> | null
   vinLookupResult?: Record<string, unknown> | null
   aiTaxonomyResult?: Record<string, unknown> | null
+  voiceNoteSessionId?: string
   userId?: string
 }
 

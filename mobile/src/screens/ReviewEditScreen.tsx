@@ -19,7 +19,9 @@ import { SpecRow } from '../components/SpecRow'
 import { camelToTitle, titleToCamel } from '../utils/formatting'
 import { TaxonomyPicker } from '../components/TaxonomyPicker'
 import { AiAnalysisBanner } from '../components/AiAnalysisBanner'
+import { VoiceNoteRecorder } from '../components/VoiceNoteRecorder'
 import type { TaxonomyCategoryNode } from '../services/APIClient'
+import type { PendingVoiceNote } from '../services/VoiceNoteUploader'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -73,6 +75,9 @@ interface Props {
   aiLoading: boolean
   aiError: boolean
   onRetryAnalysis?: () => void
+  voiceNoteSessionId?: string
+  voiceNotes?: PendingVoiceNote[]
+  onVoiceNotesChange?: (notes: PendingVoiceNote[]) => void
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -163,6 +168,9 @@ export function ReviewEditScreen({
   aiLoading,
   aiError,
   onRetryAnalysis,
+  voiceNoteSessionId,
+  voiceNotes = [],
+  onVoiceNotesChange,
 }: Props) {
   const colors = useThemeColors()
 
@@ -587,6 +595,15 @@ export function ReviewEditScreen({
               ))}
             </ScrollView>
           </>
+        )}
+
+        {/* Voice Notes */}
+        {voiceNoteSessionId && onVoiceNotesChange && (
+          <VoiceNoteRecorder
+            sessionId={voiceNoteSessionId}
+            notes={voiceNotes}
+            onNotesChange={onVoiceNotesChange}
+          />
         )}
 
         {/* Save error banner */}
