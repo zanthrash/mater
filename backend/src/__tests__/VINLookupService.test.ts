@@ -27,6 +27,7 @@ function makeAnthropicMock(jsonPayload: object) {
   const responseText = JSON.stringify(jsonPayload)
   const create = vi.fn().mockResolvedValue({
     content: [{ type: 'text', text: responseText }],
+    usage: { input_tokens: 100, output_tokens: 50 },
   })
   return {
     messages: { create },
@@ -53,7 +54,7 @@ describe('VINLookupService', () => {
 
     const anthropic = makeAnthropicMock({})
     const service = new VINLookupService(anthropic as any)
-    const result = await service.lookupVin('1FTZX1722XKA76091')
+    const { result } = await service.lookupVin('1FTZX1722XKA76091')
 
     expect(result.source).toBe('nhtsa')
     expect(result.make).toBe('Caterpillar')
@@ -70,7 +71,7 @@ describe('VINLookupService', () => {
     const claudePayload = { make: 'John Deere', model: '310L', year: 2020, engineType: null, transmission: null, gvwLbs: null }
     const anthropic = makeAnthropicMock(claudePayload)
     const service = new VINLookupService(anthropic as any)
-    const result = await service.lookupVin('1T9AA5324YB058839')
+    const { result } = await service.lookupVin('1T9AA5324YB058839')
 
     expect(result.source).toBe('claude')
     expect(result.make).toBe('John Deere')
@@ -85,7 +86,7 @@ describe('VINLookupService', () => {
     const claudePayload = { make: 'Komatsu', model: 'PC200', year: 2015, engineType: 'Diesel', transmission: null, gvwLbs: null }
     const anthropic = makeAnthropicMock(claudePayload)
     const service = new VINLookupService(anthropic as any)
-    const result = await service.lookupVin('SOME_SERIAL_123')
+    const { result } = await service.lookupVin('SOME_SERIAL_123')
 
     expect(result.source).toBe('claude')
     expect(result.make).toBe('Komatsu')

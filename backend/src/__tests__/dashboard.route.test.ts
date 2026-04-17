@@ -2,6 +2,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import Fastify from 'fastify'
 import { dashboardRoute } from '../routes/dashboard.js'
 
+vi.mock('../config.js', () => ({
+  config: {
+    supabaseUrl: 'http://localhost:54321',
+    supabaseKey: 'test-service-key',
+    anthropicApiKey: 'test-anthropic-key',
+  },
+}))
+
 const mockGetStats = vi.fn()
 const mockGetIntakeVolume = vi.fn()
 const mockGetCategoryBreakdown = vi.fn()

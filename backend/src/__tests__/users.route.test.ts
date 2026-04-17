@@ -1,6 +1,14 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import Fastify from 'fastify'
 
+vi.mock('../config.js', () => ({
+  config: {
+    supabaseUrl: 'http://localhost:54321',
+    supabaseKey: 'test-service-key',
+    anthropicApiKey: 'test-anthropic-key',
+  },
+}))
+
 vi.mock('../repositories/UserRepository.js', () => ({
   UserRepository: vi.fn().mockImplementation(() => ({
     upsertByEmail: vi.fn(),

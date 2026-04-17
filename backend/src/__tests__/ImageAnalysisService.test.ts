@@ -41,6 +41,7 @@ const sampleClassificationResult: ClassificationResult = {
 function makeAnthropicMock(responseText: string) {
   const create = vi.fn().mockResolvedValue({
     content: [{ type: 'text', text: responseText }],
+    usage: { input_tokens: 100, output_tokens: 50 },
   })
   return {
     messages: { create },
@@ -59,7 +60,7 @@ describe('ImageAnalysisService', () => {
       const anthropic = makeAnthropicMock(responseText)
       const service = new ImageAnalysisService(anthropic as any)
 
-      const result = await service.analyzeImages(images, null)
+      const { result } = await service.analyzeImages(images, null)
 
       expect(result.coreSpecs.make).toBe('Caterpillar')
       expect(result.coreSpecs.model).toBe('336')
@@ -77,7 +78,7 @@ describe('ImageAnalysisService', () => {
       const anthropic = makeAnthropicMock(responseText)
       const service = new ImageAnalysisService(anthropic as any)
 
-      const result = await service.analyzeImages(images, null)
+      const { result } = await service.analyzeImages(images, null)
 
       expect(result.coreSpecs.make).toBeNull()
       expect(result.coreSpecs.model).toBeNull()
@@ -131,7 +132,7 @@ describe('ImageAnalysisService', () => {
       const anthropic = makeAnthropicMock(responseText)
       const service = new ImageAnalysisService(anthropic as any)
 
-      const result = await service.classifyEquipment(images, null)
+      const { result } = await service.classifyEquipment(images, null)
 
       expect(result.taxonomy.category).toBe('Earthmoving')
       expect(result.taxonomy.type).toBe('Excavator')
@@ -147,7 +148,7 @@ describe('ImageAnalysisService', () => {
       const anthropic = makeAnthropicMock(responseText)
       const service = new ImageAnalysisService(anthropic as any)
 
-      const result = await service.classifyEquipment(images, null)
+      const { result } = await service.classifyEquipment(images, null)
 
       expect(result.taxonomy.category).toBe('Unknown')
       expect(result.taxonomy.type).toBe('Unknown')

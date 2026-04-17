@@ -2,11 +2,20 @@ import { describe, it, expect, vi } from 'vitest'
 import { ImageAnalysisService, VinExtractionError } from '../services/ImageAnalysisService.js'
 import { buildApp } from '../app.js'
 
+vi.mock('../config.js', () => ({
+  config: {
+    supabaseUrl: 'http://localhost:54321',
+    supabaseKey: 'test-service-key',
+    anthropicApiKey: 'test-anthropic-key',
+  },
+}))
+
 vi.mock('@supabase/supabase-js', () => ({ createClient: vi.fn(() => ({})) }))
 
 function makeAnthropicMock(responseText: string) {
   const create = vi.fn().mockResolvedValue({
     content: [{ type: 'text', text: responseText }],
+    usage: { input_tokens: 100, output_tokens: 50 },
   })
   return {
     messages: { create },
@@ -21,7 +30,7 @@ describe('ImageAnalysisService.extractVinFromImage', () => {
     const anthropic = makeAnthropicMock('1HGCM82633A004352')
     const service = new ImageAnalysisService(anthropic as any)
 
-    const vin = await service.extractVinFromImage(fakeBase64)
+    const { result: vin } = await service.extractVinFromImage(fakeBase64)
 
     expect(vin).toBe('1HGCM82633A004352')
     expect(anthropic._mocks.create).toHaveBeenCalledOnce()
@@ -37,7 +46,7 @@ describe('ImageAnalysisService.extractVinFromImage', () => {
     const anthropic = makeAnthropicMock('  1HGCM82633A004352  \n')
     const service = new ImageAnalysisService(anthropic as any)
 
-    const vin = await service.extractVinFromImage(fakeBase64)
+    const { result: vin } = await service.extractVinFromImage(fakeBase64)
 
     expect(vin).toBe('1HGCM82633A004352')
   })
@@ -60,6 +69,7 @@ describe('ImageAnalysisService.extractVinFromImage', () => {
   it('throws VinExtractionError when no text block in response', async () => {
     const create = vi.fn().mockResolvedValue({
       content: [],
+      usage: { input_tokens: 10, output_tokens: 0 },
     })
     const anthropic = { messages: { create } }
     const service = new ImageAnalysisService(anthropic as any)

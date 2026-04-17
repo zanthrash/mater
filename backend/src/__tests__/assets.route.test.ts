@@ -2,6 +2,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import Fastify from 'fastify'
 import { assetsRoute } from '../routes/assets.js'
 
+vi.mock('../config.js', () => ({
+  config: {
+    supabaseUrl: 'http://localhost:54321',
+    supabaseKey: 'test-service-key',
+    anthropicApiKey: 'test-anthropic-key',
+  },
+}))
+
 const mockCreate = vi.fn()
 const mockFindById = vi.fn()
 const mockUpdate = vi.fn()
