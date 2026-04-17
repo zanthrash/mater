@@ -426,8 +426,17 @@ function AppContent() {
             await offlineQueue.processQueue((sid, uri, dur) => voiceUploader.upload(sid, uri, dur))
             const remaining = await offlineQueue.getAll()
             if (remaining.length > 0) {
-              Alert.alert('Offline voice notes pending', 'Some voice notes could not be uploaded. Please connect to the internet and try again.')
-              return
+              const proceed = await new Promise<boolean>((resolve) => {
+                Alert.alert(
+                  'Voice notes pending',
+                  'Some voice notes could not be uploaded. Submit without them?',
+                  [
+                    { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+                    { text: 'Submit Anyway', onPress: () => resolve(true) },
+                  ]
+                )
+              })
+              if (!proceed) return
             }
           }
 

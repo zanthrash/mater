@@ -18,7 +18,6 @@ interface Props {
 
 export function VoiceNoteRecorder({ sessionId, notes, onNotesChange }: Props) {
   const colors = useThemeColors()
-  const [expanded, setExpanded] = useState(false)
   const [recording, setRecording] = useState<Audio.Recording | null>(null)
   const [elapsed, setElapsed] = useState(0)
   const [uploading, setUploading] = useState(false)
@@ -26,11 +25,21 @@ export function VoiceNoteRecorder({ sessionId, notes, onNotesChange }: Props) {
   const soundRef = useRef<Audio.Sound | null>(null)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
+  const processOfflineQueueRef = useRef<() => Promise<void>>()
+  processOfflineQueueRef.current = async function processOfflineQueue() {
+    await offlineQueue.processQueue(async (sid, uri, dur) => {
+      const note = await uploader.upload(sid, uri, dur)
+      if (sid === sessionId) {
+        onNotesChange([...notes, note])
+      }
+    })
+  }
+
   useEffect(() => {
-    processOfflineQueue()
+    processOfflineQueueRef.current?.()
 
     const sub = AppState.addEventListener('change', (state) => {
-      if (state === 'active') processOfflineQueue()
+      if (state === 'active') processOfflineQueueRef.current?.()
     })
 
     return () => {
@@ -39,15 +48,6 @@ export function VoiceNoteRecorder({ sessionId, notes, onNotesChange }: Props) {
       soundRef.current?.unloadAsync().catch(() => {})
     }
   }, [])
-
-  async function processOfflineQueue() {
-    await offlineQueue.processQueue(async (sid, uri, dur) => {
-      const note = await uploader.upload(sid, uri, dur)
-      if (sid === sessionId) {
-        onNotesChange([...notes, note])
-      }
-    })
-  }
 
   async function startRecording() {
     try {
@@ -102,7 +102,6 @@ export function VoiceNoteRecorder({ sessionId, notes, onNotesChange }: Props) {
       const note = await uploader.upload(sessionId, uri, durationSeconds)
       onNotesChange([...notes, note])
 
-      // Poll for transcript after a short delay
       setTimeout(async () => {
         try {
           const updated = await uploader.pollTranscription(sessionId)
@@ -144,6 +143,12 @@ export function VoiceNoteRecorder({ sessionId, notes, onNotesChange }: Props) {
   }
 
   async function deleteNote(note: PendingVoiceNote) {
+    if (playingId === note.id) {
+      await soundRef.current?.stopAsync()
+      await soundRef.current?.unloadAsync().catch(() => {})
+      soundRef.current = null
+      setPlayingId(null)
+    }
     try {
       await uploader.deleteNote(note.id)
       onNotesChange(notes.filter((n) => n.id !== note.id))
@@ -159,84 +164,88 @@ export function VoiceNoteRecorder({ sessionId, notes, onNotesChange }: Props) {
   }
 
   return (
-    <View style={[styles.container, { borderColor: colors.border }]}>
-      <TouchableOpacity style={styles.header} onPress={() => setExpanded(!expanded)} activeOpacity={0.7}>
-        <View style={styles.headerLeft}>
-          <Ionicons name="mic-outline" size={16} color={colors.secondary} style={{ marginRight: 6 }} />
-          <Text style={[styles.headerText, { color: colors.text, fontFamily: typography.bodyFamily }]}>
-            Voice Notes <Text style={{ color: colors.secondary }}>(optional)</Text>
+    <View style={[styles.container, { borderColor: colors.border, backgroundColor: colors.surface }]}>
+      <View style={styles.header}>
+        <Ionicons name="mic" size={14} color={colors.primary} style={{ marginRight: 6 }} />
+        <Text style={[styles.sectionLabel, { color: colors.primary, fontFamily: typography.headingFamily }]}>
+          VOICE NOTES
+        </Text>
+        <Text style={[styles.sectionOptional, { color: colors.secondary, fontFamily: typography.bodyFamily }]}>
+          {' (optional)'}
+        </Text>
+        {notes.length > 0 && (
+          <Text style={[styles.noteCount, { color: colors.secondary, fontFamily: typography.monoFamily }]}>
+            {'  ·  '}{notes.length} recorded
           </Text>
-          {notes.length > 0 && (
-            <View style={[styles.badge, { backgroundColor: colors.primary }]}>
-              <Text style={styles.badgeText}>{notes.length}</Text>
+        )}
+      </View>
+
+      <View style={styles.body}>
+        {notes.map((note) => (
+          <View key={note.id} style={[styles.noteRow, { borderColor: colors.border, backgroundColor: colors.inputBg }]}>
+            <View style={styles.noteInfo}>
+              <Text style={[styles.noteDuration, { color: colors.secondary, fontFamily: typography.monoFamily }]}>
+                {formatTime(note.durationSeconds)}
+              </Text>
+              <Text
+                style={[styles.noteTranscript, { color: colors.text, fontFamily: typography.bodyFamily }]}
+                numberOfLines={2}
+              >
+                {note.transcriptionStatus === 'pending' ? 'Transcribing...' : (note.transcript || '—')}
+              </Text>
             </View>
+            <View style={styles.noteActions}>
+              <TouchableOpacity
+                onPress={() => playNote(note)}
+                style={styles.iconBtn}
+                accessibilityLabel={playingId === note.id ? 'Pause voice note' : 'Play voice note'}
+              >
+                <Ionicons
+                  name={playingId === note.id ? 'pause-circle' : 'play-circle'}
+                  size={22}
+                  color={colors.primary}
+                />
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => deleteNote(note)}
+                style={styles.iconBtn}
+                accessibilityLabel="Delete voice note"
+              >
+                <Ionicons name="trash-outline" size={18} color={colors.error} />
+              </TouchableOpacity>
+            </View>
+          </View>
+        ))}
+
+        <View style={styles.controls}>
+          {recording ? (
+            <TouchableOpacity
+              style={[styles.recordBtn, styles.recordingBtn]}
+              onPress={() => stopRecording()}
+              activeOpacity={0.8}
+              accessibilityLabel="Stop recording"
+            >
+              <Ionicons name="stop" size={20} color="#fff" />
+              <Text style={styles.recordBtnText}>{formatTime(elapsed)}</Text>
+            </TouchableOpacity>
+          ) : uploading ? (
+            <View style={[styles.recordBtn, { backgroundColor: colors.inputBg }]}>
+              <ActivityIndicator size="small" color={colors.primary} />
+              <Text style={[styles.recordBtnText, { color: colors.text }]}>Uploading...</Text>
+            </View>
+          ) : (
+            <TouchableOpacity
+              style={[styles.recordBtn, { backgroundColor: colors.primary }]}
+              onPress={startRecording}
+              activeOpacity={0.8}
+              accessibilityLabel="Start recording voice note"
+            >
+              <Ionicons name="mic" size={20} color="#fff" />
+              <Text style={styles.recordBtnText}>Record Note</Text>
+            </TouchableOpacity>
           )}
         </View>
-        <Ionicons
-          name={expanded ? 'chevron-up' : 'chevron-down'}
-          size={16}
-          color={colors.secondary}
-        />
-      </TouchableOpacity>
-
-      {expanded && (
-        <View style={styles.body}>
-          {notes.map((note) => (
-            <View key={note.id} style={[styles.noteRow, { borderColor: colors.border }]}>
-              <View style={styles.noteInfo}>
-                <Text style={[styles.noteDuration, { color: colors.secondary, fontFamily: typography.monoFamily }]}>
-                  {formatTime(note.durationSeconds)}
-                </Text>
-                <Text
-                  style={[styles.noteTranscript, { color: colors.text, fontFamily: typography.bodyFamily }]}
-                  numberOfLines={2}
-                >
-                  {note.transcriptionStatus === 'pending' ? 'Transcribing...' : (note.transcript || '—')}
-                </Text>
-              </View>
-              <View style={styles.noteActions}>
-                <TouchableOpacity onPress={() => playNote(note)} style={styles.iconBtn}>
-                  <Ionicons
-                    name={playingId === note.id ? 'pause-circle' : 'play-circle'}
-                    size={22}
-                    color={colors.primary}
-                  />
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => deleteNote(note)} style={styles.iconBtn}>
-                  <Ionicons name="trash-outline" size={18} color={colors.error} />
-                </TouchableOpacity>
-              </View>
-            </View>
-          ))}
-
-          <View style={styles.controls}>
-            {recording ? (
-              <TouchableOpacity
-                style={[styles.recordBtn, styles.recordingBtn]}
-                onPress={() => stopRecording()}
-                activeOpacity={0.8}
-              >
-                <Ionicons name="stop" size={20} color="#fff" />
-                <Text style={styles.recordBtnText}>{formatTime(elapsed)}</Text>
-              </TouchableOpacity>
-            ) : uploading ? (
-              <View style={[styles.recordBtn, { backgroundColor: colors.border }]}>
-                <ActivityIndicator size="small" color={colors.primary} />
-                <Text style={[styles.recordBtnText, { color: colors.secondary }]}>Uploading...</Text>
-              </View>
-            ) : (
-              <TouchableOpacity
-                style={[styles.recordBtn, { backgroundColor: colors.primary }]}
-                onPress={startRecording}
-                activeOpacity={0.8}
-              >
-                <Ionicons name="mic" size={20} color="#fff" />
-                <Text style={styles.recordBtnText}>Record Note</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
-      )}
+      </View>
     </View>
   )
 }
@@ -245,34 +254,24 @@ const styles = StyleSheet.create({
   container: {
     borderRadius: 12,
     borderWidth: 1,
-    overflow: 'hidden',
     marginBottom: 16,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: 14,
     paddingVertical: 12,
   },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  headerText: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  badge: {
-    marginLeft: 8,
-    borderRadius: 10,
-    paddingHorizontal: 6,
-    paddingVertical: 1,
-  },
-  badgeText: {
-    color: '#fff',
-    fontSize: 11,
+  sectionLabel: {
+    fontSize: 12,
     fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  sectionOptional: {
+    fontSize: 12,
+  },
+  noteCount: {
+    fontSize: 12,
   },
   body: {
     paddingHorizontal: 14,
