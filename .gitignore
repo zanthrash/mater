@@ -26,3 +26,4 @@ backend/supabase/.temp/
 
 # Superpowers brainstorm artifacts
 .superpowers/
+.worktrees/
