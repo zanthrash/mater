@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { File } from 'expo-file-system'
+import * as FileSystem from 'expo-file-system'
 
 const QUEUE_KEY = 'voice_note_offline_queue'
 
@@ -34,7 +34,8 @@ export class OfflineVoiceNoteQueue {
   ): Promise<void> {
     const items = await this.getAll()
     for (const item of items) {
-      if (!new File(item.fileUri).exists) {
+      const info = await FileSystem.getInfoAsync(item.fileUri)
+      if (!info.exists) {
         await this.dequeue(item.fileUri)
         continue
       }
