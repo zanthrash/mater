@@ -192,8 +192,8 @@ export function VoiceNoteRecorder({ sessionId, notes, onNotesChange }: Props) {
                 {formatTime(note.durationSeconds)}
               </Text>
               <Text
-                style={[styles.noteTranscript, { color: colors.text, fontFamily: typography.bodyFamily }]}
-                numberOfLines={2}
+                style={[styles.noteTranscript, { color: colors.body, fontFamily: typography.bodyFamily }]}
+
               >
                 {note.transcriptionStatus === 'pending' ? 'Transcribing...' : (note.transcript || '—')}
               </Text>
@@ -301,10 +301,13 @@ const styles = StyleSheet.create({
   },
   noteActions: {
     flexDirection: 'row',
-    gap: 4,
+    gap: 8,
   },
   iconBtn: {
-    padding: 4,
+    minWidth: 44,
+    minHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   controls: {
     marginTop: 4,
