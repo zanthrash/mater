@@ -1,11 +1,10 @@
 import type { FastifyPluginAsync } from 'fastify'
 import { createClient } from '@supabase/supabase-js'
-import Anthropic from '@anthropic-ai/sdk'
+import OpenAI from 'openai'
 import { config } from '../config.js'
 import { VoiceNoteStorageService } from '../services/VoiceNoteStorageService.js'
 import { TranscriptionService } from '../services/TranscriptionService.js'
 import { PendingVoiceNoteRepository } from '../repositories/PendingVoiceNoteRepository.js'
-import { AiUsageRepository } from '../repositories/AiUsageRepository.js'
 
 interface IdParams {
   id: string
@@ -18,9 +17,8 @@ interface SessionParams {
 export const voiceNotesRoute: FastifyPluginAsync = async (fastify) => {
   const supabase = createClient(config.supabaseUrl, config.supabaseKey)
   const storageService = new VoiceNoteStorageService(supabase)
-  const anthropic = new Anthropic({ apiKey: config.anthropicApiKey })
-  const usageRepo = new AiUsageRepository(supabase)
-  const transcriptionService = new TranscriptionService(anthropic, usageRepo)
+  const openai = new OpenAI({ apiKey: config.openaiApiKey })
+  const transcriptionService = new TranscriptionService(openai)
   const pendingRepo = new PendingVoiceNoteRepository(supabase)
 
   // POST /api/voice-notes/upload
@@ -61,7 +59,9 @@ export const voiceNotesRoute: FastifyPluginAsync = async (fastify) => {
       // Fire-and-forget transcription
       transcriptionService.transcribe(audioBuffer).then((transcript) => {
         pendingRepo.updateTranscript(pending.id, transcript, 'done').catch(() => {})
-      }).catch(() => {
+      }).catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : String(err)
+        fastify.log.error(`[transcription] failed for ${pending.id}: ${msg}`)
         pendingRepo.updateTranscript(pending.id, '', 'failed').catch(() => {})
       })
 

@@ -8,4 +8,5 @@ export const config = {
   supabaseUrl: required('SUPABASE_URL'),
   supabaseKey: required('SUPABASE_SERVICE_KEY'),
   anthropicApiKey: required('ANTHROPIC_API_KEY'),
+  openaiApiKey: required('OPENAI_API_KEY'),
 }

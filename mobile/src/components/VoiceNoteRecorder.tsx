@@ -102,12 +102,16 @@ export function VoiceNoteRecorder({ sessionId, notes, onNotesChange }: Props) {
       const note = await uploader.upload(sessionId, uri, durationSeconds)
       onNotesChange([...notes, note])
 
-      setTimeout(async () => {
-        try {
-          const updated = await uploader.pollTranscription(sessionId)
-          onNotesChange(updated)
-        } catch {}
-      }, 5000)
+      ;(async () => {
+        for (let i = 0; i < 8; i++) {
+          await new Promise(r => setTimeout(r, 2000))
+          try {
+            const updated = await uploader.pollTranscription(sessionId)
+            onNotesChange(updated)
+            if (updated.every(n => n.transcriptionStatus !== 'pending')) break
+          } catch {}
+        }
+      })()
     } catch {
       if (uri) {
         await offlineQueue.enqueue({
