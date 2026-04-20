@@ -1,4 +1,6 @@
+// dashboard/src/components/VoiceNotesCard.tsx
 import { useRef, useState } from 'react'
+import { useUpdateAsset } from '@/api/hooks'
 
 interface VoiceNote {
   url: string
@@ -9,6 +11,7 @@ interface VoiceNote {
 
 interface Props {
   notes: VoiceNote[]
+  assetId: string
 }
 
 function formatDuration(seconds: number) {
@@ -25,9 +28,13 @@ function relativeTime(iso: string) {
   return `${Math.floor(hours / 24)}d ago`
 }
 
-export function VoiceNotesCard({ notes }: Props) {
+export function VoiceNotesCard({ notes, assetId }: Props) {
   const [playingIndex, setPlayingIndex] = useState<number | null>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
+  const [editingIndex, setEditingIndex] = useState<number | null>(null)
+  const [editText, setEditText] = useState('')
+  const [confirmDeleteIndex, setConfirmDeleteIndex] = useState<number | null>(null)
+  const updateAsset = useUpdateAsset()
 
   function togglePlay(index: number, url: string) {
     if (playingIndex === index) {
@@ -35,17 +42,54 @@ export function VoiceNotesCard({ notes }: Props) {
       setPlayingIndex(null)
       return
     }
-
     if (audioRef.current) {
       audioRef.current.pause()
     }
-
     const audio = new Audio(url)
     audioRef.current = audio
     setPlayingIndex(index)
-
     audio.play()
     audio.onended = () => setPlayingIndex(null)
+  }
+
+  function startEdit(index: number, transcript: string | null) {
+    setConfirmDeleteIndex(null)
+    setEditingIndex(index)
+    setEditText(transcript ?? '')
+  }
+
+  function cancelEdit() {
+    setEditingIndex(null)
+    setEditText('')
+  }
+
+  async function saveEdit(index: number) {
+    const newNotes = notes.map((n, i) =>
+      i === index ? { ...n, transcript: editText } : n
+    )
+    await updateAsset.mutateAsync({ id: assetId, updates: { voice_notes: newNotes } as any })
+    setEditingIndex(null)
+    setEditText('')
+  }
+
+  function startDelete(index: number) {
+    setEditingIndex(null)
+    setEditText('')
+    setConfirmDeleteIndex(index)
+  }
+
+  function cancelDelete() {
+    setConfirmDeleteIndex(null)
+  }
+
+  async function confirmDelete(index: number) {
+    const newNotes = notes.filter((_, i) => i !== index)
+    await updateAsset.mutateAsync({ id: assetId, updates: { voice_notes: newNotes } as any })
+    if (playingIndex === index) {
+      audioRef.current?.pause()
+      setPlayingIndex(null)
+    }
+    setConfirmDeleteIndex(null)
   }
 
   return (
@@ -61,35 +105,118 @@ export function VoiceNotesCard({ notes }: Props) {
       <div className="flex flex-col gap-2">
         {notes.map((note, i) => (
           <div key={i} className="bg-[var(--color-surface-primary)] rounded-lg p-2.5">
-            <p className="text-xs text-[var(--color-text-primary)] leading-relaxed mb-1.5">
-              {note.transcript ?? <span className="text-[var(--color-text-muted)] italic">Transcription pending...</span>}
-            </p>
-            <div className="flex items-center gap-2">
-              <span className="text-[9px] font-mono text-[var(--color-text-muted)] bg-[var(--color-surface-card)] px-1.5 py-0.5 rounded">
-                {formatDuration(note.duration_seconds)}
-              </span>
-              <span className="text-[9px] text-[var(--color-text-muted)]">{relativeTime(note.recorded_at)}</span>
-              <button
-                onClick={() => togglePlay(i, note.url)}
-                className="ml-auto flex items-center gap-1 text-[10px] text-[var(--color-accent-blue)] hover:opacity-80 transition-opacity"
-              >
-                {playingIndex === i ? (
-                  <>
-                    <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
-                    </svg>
-                    Pause
-                  </>
+
+            {/* Delete confirmation */}
+            {confirmDeleteIndex === i ? (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-[var(--color-text-primary)] flex-1">Delete this note?</span>
+                <button
+                  onClick={() => confirmDelete(i)}
+                  disabled={updateAsset.isPending}
+                  className="text-[10px] text-[var(--color-accent-red)] hover:opacity-80 disabled:opacity-40 transition-opacity"
+                >
+                  Yes
+                </button>
+                <button
+                  onClick={cancelDelete}
+                  disabled={updateAsset.isPending}
+                  className="text-[10px] text-[var(--color-text-muted)] hover:opacity-80 disabled:opacity-40 transition-opacity"
+                >
+                  No
+                </button>
+              </div>
+            ) : (
+              <>
+                {/* Transcript row */}
+                <div className="flex items-start justify-between gap-1.5 mb-1.5">
+                  {editingIndex === i ? (
+                    <textarea
+                      value={editText}
+                      onChange={(e) => setEditText(e.target.value)}
+                      className="text-xs text-[var(--color-text-primary)] bg-transparent border border-[var(--color-border)] rounded p-1 w-full resize-none leading-relaxed"
+                      rows={3}
+                      autoFocus
+                    />
+                  ) : (
+                    <p className="text-xs text-[var(--color-text-primary)] leading-relaxed flex-1">
+                      {note.transcript ?? (
+                        <span className="text-[var(--color-text-muted)] italic">Transcription pending...</span>
+                      )}
+                    </p>
+                  )}
+                  {editingIndex !== i && (
+                    <button
+                      onClick={() => startEdit(i, note.transcript)}
+                      className="text-[var(--color-text-muted)] hover:opacity-80 transition-opacity flex-shrink-0"
+                      aria-label="Edit transcript"
+                    >
+                      {/* Pencil icon */}
+                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+
+                {/* Footer row */}
+                {editingIndex === i ? (
+                  <div className="flex gap-1.5 justify-end">
+                    <button
+                      onClick={cancelEdit}
+                      disabled={updateAsset.isPending}
+                      className="text-[10px] text-[var(--color-text-muted)] px-2 py-0.5 rounded border border-[var(--color-border)] disabled:opacity-40"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => saveEdit(i)}
+                      disabled={updateAsset.isPending}
+                      className="text-[10px] text-white bg-[var(--color-accent-blue)] px-2 py-0.5 rounded disabled:opacity-40"
+                    >
+                      Save
+                    </button>
+                  </div>
                 ) : (
-                  <>
-                    <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M8 5v14l11-7z" />
-                    </svg>
-                    Play
-                  </>
+                  <div className="flex items-center gap-2">
+                    {/* Trash icon */}
+                    <button
+                      onClick={() => startDelete(i)}
+                      className="text-[var(--color-text-muted)] hover:text-[var(--color-accent-red)] transition-colors"
+                      aria-label="Delete note"
+                    >
+                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                    <span className="text-[9px] font-mono text-[var(--color-text-muted)] bg-[var(--color-surface-card)] px-1.5 py-0.5 rounded">
+                      {formatDuration(note.duration_seconds)}
+                    </span>
+                    <span className="text-[9px] text-[var(--color-text-muted)]">{relativeTime(note.recorded_at)}</span>
+                    <button
+                      onClick={() => togglePlay(i, note.url)}
+                      className="ml-auto flex items-center gap-1 text-[10px] text-[var(--color-accent-blue)] hover:opacity-80 transition-opacity"
+                    >
+                      {playingIndex === i ? (
+                        <>
+                          <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+                          </svg>
+                          Pause
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M8 5v14l11-7z" />
+                          </svg>
+                          Play
+                        </>
+                      )}
+                    </button>
+                  </div>
                 )}
-              </button>
-            </div>
+              </>
+            )}
+
           </div>
         ))}
       </div>
