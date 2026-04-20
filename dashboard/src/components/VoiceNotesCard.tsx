@@ -48,7 +48,7 @@ export function VoiceNotesCard({ notes, assetId }: Props) {
     const audio = new Audio(url)
     audioRef.current = audio
     setPlayingIndex(index)
-    audio.play()
+    audio.play().catch(() => setPlayingIndex(null))
     audio.onended = () => setPlayingIndex(null)
   }
 
@@ -64,12 +64,16 @@ export function VoiceNotesCard({ notes, assetId }: Props) {
   }
 
   async function saveEdit(index: number) {
-    const newNotes = notes.map((n, i) =>
-      i === index ? { ...n, transcript: editText } : n
-    )
-    await updateAsset.mutateAsync({ id: assetId, updates: { voice_notes: newNotes } as any })
-    setEditingIndex(null)
-    setEditText('')
+    try {
+      const newNotes = notes.map((n, i) =>
+        i === index ? { ...n, transcript: editText } : n
+      )
+      await updateAsset.mutateAsync({ id: assetId, updates: { voice_notes: newNotes } as any })
+      setEditingIndex(null)
+      setEditText('')
+    } catch {
+      // leave edit mode open so user can retry
+    }
   }
 
   function startDelete(index: number) {
@@ -83,13 +87,17 @@ export function VoiceNotesCard({ notes, assetId }: Props) {
   }
 
   async function confirmDelete(index: number) {
-    const newNotes = notes.filter((_, i) => i !== index)
-    await updateAsset.mutateAsync({ id: assetId, updates: { voice_notes: newNotes } as any })
-    if (playingIndex === index) {
-      audioRef.current?.pause()
-      setPlayingIndex(null)
+    try {
+      const newNotes = notes.filter((_, i) => i !== index)
+      await updateAsset.mutateAsync({ id: assetId, updates: { voice_notes: newNotes } as any })
+      if (playingIndex === index) {
+        audioRef.current?.pause()
+        setPlayingIndex(null)
+      }
+      setConfirmDeleteIndex(null)
+    } catch {
+      // leave confirm mode open so user can retry
     }
-    setConfirmDeleteIndex(null)
   }
 
   return (
@@ -104,7 +112,7 @@ export function VoiceNotesCard({ notes, assetId }: Props) {
 
       <div className="flex flex-col gap-2">
         {notes.map((note, i) => (
-          <div key={i} className="bg-[var(--color-surface-primary)] rounded-lg p-2.5">
+          <div key={note.recorded_at} className="bg-[var(--color-surface-primary)] rounded-lg p-2.5">
 
             {/* Delete confirmation */}
             {confirmDeleteIndex === i ? (
@@ -136,6 +144,7 @@ export function VoiceNotesCard({ notes, assetId }: Props) {
                       className="text-xs text-[var(--color-text-primary)] bg-transparent border border-[var(--color-border)] rounded p-1 w-full resize-none leading-relaxed"
                       rows={3}
                       autoFocus
+                      aria-label="Edit transcript"
                     />
                   ) : (
                     <p className="text-xs text-[var(--color-text-primary)] leading-relaxed flex-1">
@@ -147,7 +156,7 @@ export function VoiceNotesCard({ notes, assetId }: Props) {
                   {editingIndex !== i && (
                     <button
                       onClick={() => startEdit(i, note.transcript)}
-                      className="text-[var(--color-text-muted)] hover:opacity-80 transition-opacity flex-shrink-0"
+                      className="text-[var(--color-text-muted)] hover:opacity-80 transition-opacity flex-shrink-0 p-1"
                       aria-label="Edit transcript"
                     >
                       {/* Pencil icon */}
@@ -181,7 +190,7 @@ export function VoiceNotesCard({ notes, assetId }: Props) {
                     {/* Trash icon */}
                     <button
                       onClick={() => startDelete(i)}
-                      className="text-[var(--color-text-muted)] hover:text-[var(--color-accent-red)] transition-colors"
+                      className="text-[var(--color-text-muted)] hover:text-[var(--color-accent-red)] transition-colors p-1"
                       aria-label="Delete note"
                     >
                       <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
