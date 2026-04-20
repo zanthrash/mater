@@ -164,7 +164,7 @@ function AssetDetail() {
 
           {/* Voice Notes */}
           {asset.voice_notes && asset.voice_notes.length > 0 && (
-            <VoiceNotesCard notes={asset.voice_notes} />
+            <VoiceNotesCard notes={asset.voice_notes} assetId={id} />
           )}
 
           {/* Intake Timeline */}
